@@ -22,7 +22,6 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { NavProjects } from "./nav-projects"
 import { NavMain } from "./nav-main"
 import { NavUser } from "./nav-user"
 
@@ -35,125 +34,58 @@ const data = {
   },
   teams: [
     {
-      name: "Acme Inc",
+      name: "Math",
       logo: GalleryVerticalEnd,
-      plan: "Enterprise",
+      plan: "Tomas",
     },
     {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
+        name: "German",
+        logo: GalleryVerticalEnd,
+        plan: "Johann",
+      }
   ],
   navMain: [
     {
-      title: "Playground",
+      title: "Activity",
       url: "#",
-      icon: SquareTerminal,
+      icon: Map,
       isActive: true,
       items: [
         {
-          title: "History",
+          title: "Calendar",
           url: "#",
         },
         {
-          title: "Starred",
+          title: "Exams",
           url: "#",
         },
         {
-          title: "Settings",
+          title: "Tasks",
           url: "#",
         },
       ],
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
+        title: "Info",
+        url: "#",
+        icon: BookOpen,
+        isActive: true,
+        items: [
+          {
+            title: "Grades",
+            url: "#",
+          },
+          {
+            title: "Classes",
+            url: "#",
+          },
+          {
+            title: "Absences",
+            url: "#",
+          },
+        ],
+      }
+]
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -164,9 +96,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter> 
         <NavUser user={data.user} />
       </SidebarFooter>
       <SidebarRail />
