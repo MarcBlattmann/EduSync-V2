@@ -71,7 +71,8 @@ export function NavMain({
                   <SidebarMenuSub>
                     {item.items?.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
-                        <Link href={subItem.url}>
+                        {/* Fix: Use the Link asChild prop to prevent nesting <a> tags */}
+                        <Link href={subItem.url} legacyBehavior passHref>
                           <SidebarMenuSubButton>
                             <span>{subItem.title}</span>
                           </SidebarMenuSubButton>

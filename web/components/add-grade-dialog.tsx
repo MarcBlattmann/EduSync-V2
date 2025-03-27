@@ -41,9 +41,21 @@ export function AddGradeDialog({
   const [subject, setSubject] = useState("");
   const [customSubject, setCustomSubject] = useState("");
   const [grade, setGrade] = useState<number>(1);
+  const [gradeInput, setGradeInput] = useState<string>("1"); // Add a string state for the input
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
   const [showCustomSubject, setShowCustomSubject] = useState(false);
+  
+  const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setGradeInput(value); // Always update the string value for the input
+    
+    // Only update the numeric value if it's valid
+    const parsedValue = parseFloat(value);
+    if (!isNaN(parsedValue)) {
+      setGrade(parsedValue);
+    }
+  };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +74,7 @@ export function AddGradeDialog({
     setSubject("");
     setCustomSubject("");
     setGrade(1);
+    setGradeInput("1"); // Reset the input value too
     setDate(new Date().toISOString().split("T")[0]);
     setDescription("");
     setShowCustomSubject(false);
@@ -132,8 +145,8 @@ export function AddGradeDialog({
                 min="1"
                 max="6"
                 step="0.1"
-                value={grade}
-                onChange={(e) => setGrade(parseFloat(e.target.value))}
+                value={gradeInput} // Use the string value for the input
+                onChange={handleGradeChange}
                 required
               />
             </div>
