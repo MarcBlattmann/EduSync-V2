@@ -8,6 +8,7 @@ import {
   Command,
   Frame,
   GalleryVerticalEnd,
+  Home,
   Map,
   PieChart,
   Settings2,
@@ -46,6 +47,13 @@ const data = {
   ],
   navMain: [
     {
+      title: "Home",
+      url: "/protected",
+      icon: Home,
+      isActive: false,
+      noSubmenu: true, 
+    },
+    {
       title: "Activity",
       url: "#",
       icon: Map,
@@ -73,7 +81,7 @@ const data = {
         items: [
           {
             title: "Grades",
-            url: "#",
+            url: "/protected/grades",
           },
           {
             title: "Classes",
