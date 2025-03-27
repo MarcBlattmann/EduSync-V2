@@ -1,6 +1,8 @@
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -31,9 +33,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <main className="h-screen flex flex-col items-center">
-            {children}
-          </main>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <main className="h-screen flex flex-col">
+                {children}
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
         </ThemeProvider>
       </body>
     </html>
