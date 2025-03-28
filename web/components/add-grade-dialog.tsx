@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Plus } from "lucide-react";
 
 interface AddGradeProps {
   open: boolean;
@@ -30,6 +31,15 @@ interface AddGradeProps {
     description: string;
   }) => void;
   existingSubjects: string[];
+  editingGrade?: {
+    id: string;
+    subject: string;
+    grade: number;
+    date: string;
+    description: string;
+    created_at: string;
+  } | null;
+  isEditing?: boolean;
 }
 
 export function AddGradeDialog({
@@ -37,14 +47,42 @@ export function AddGradeDialog({
   onOpenChange,
   onAddGrade,
   existingSubjects,
+  editingGrade = null,
+  isEditing = false,
 }: AddGradeProps) {
   const [subject, setSubject] = useState("");
   const [customSubject, setCustomSubject] = useState("");
   const [grade, setGrade] = useState<number>(1);
-  const [gradeInput, setGradeInput] = useState<string>("1"); // Add a string state for the input
+  const [gradeInput, setGradeInput] = useState<string>("1");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
   const [showCustomSubject, setShowCustomSubject] = useState(false);
+  
+  // Initialize form with editing grade data when available
+  useEffect(() => {
+    if (editingGrade) {
+      if (existingSubjects.includes(editingGrade.subject)) {
+        setSubject(editingGrade.subject);
+        setShowCustomSubject(false);
+      } else {
+        setCustomSubject(editingGrade.subject);
+        setShowCustomSubject(true);
+      }
+      setGrade(editingGrade.grade);
+      setGradeInput(editingGrade.grade.toString());
+      setDate(editingGrade.date);
+      setDescription(editingGrade.description);
+    } else {
+      // Reset form when not editing
+      setSubject("");
+      setCustomSubject("");
+      setGrade(1);
+      setGradeInput("1");
+      setDate(new Date().toISOString().split("T")[0]);
+      setDescription("");
+      setShowCustomSubject(false);
+    }
+  }, [editingGrade, existingSubjects, open]);
   
   const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -85,9 +123,11 @@ export function AddGradeDialog({
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add New Grade</DialogTitle>
+            <DialogTitle>{isEditing ? 'Edit Grade' : 'Add New Grade'}</DialogTitle>
             <DialogDescription>
-              Enter the details for your new grade. Click save when you're done.
+              {isEditing 
+                ? 'Edit the details of your grade. Click save when you\'re done.'
+                : 'Enter the details for your new grade. Click save when you\'re done.'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -114,7 +154,12 @@ export function AddGradeDialog({
                           {sub}
                         </SelectItem>
                       ))}
-                      <SelectItem value="custom">Add new subject</SelectItem>
+                      <SelectItem value="custom">
+                        <div className="flex items-center gap-2">
+                          <Plus size={16} />
+                          <span>Add new subject</span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </>
@@ -171,7 +216,7 @@ export function AddGradeDialog({
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Save Grade</Button>
+            <Button type="submit">{isEditing ? 'Save Changes' : 'Save Grade'}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

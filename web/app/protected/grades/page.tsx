@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { AddGradeDialog } from "@/components/add-grade-dialog";
 import { 
@@ -47,6 +47,7 @@ export default function Grades() {
     const [gradeToDelete, setGradeToDelete] = useState<string | null>(null);
     const [averageGrade, setAverageGrade] = useState<number | null>(null);
     const [subjectAverages, setSubjectAverages] = useState<Record<string, number>>({});
+    const [editingGrade, setEditingGrade] = useState<Grade | null>(null);
 
     const fetchGrades = async () => {
         setIsLoading(true);
@@ -107,18 +108,37 @@ export default function Grades() {
         
         if (!user) return;
         
-        const { data, error } = await supabase
-            .from('grades')
-            .insert([{
-                ...newGrade,
-                user_id: user.id
-            }])
-            .select();
-            
-        if (error) {
-            console.error('Error adding grade:', error);
-            return;
+        if (editingGrade) {
+            // Update existing grade
+            const { error } = await supabase
+                .from('grades')
+                .update({
+                    ...newGrade,
+                    user_id: user.id
+                })
+                .eq('id', editingGrade.id);
+                
+            if (error) {
+                console.error('Error updating grade:', error);
+                return;
+            }
+        } else {
+            // Insert new grade
+            const { error } = await supabase
+                .from('grades')
+                .insert([{
+                    ...newGrade,
+                    user_id: user.id
+                }]);
+                
+            if (error) {
+                console.error('Error adding grade:', error);
+                return;
+            }
         }
+        
+        // Reset editing state
+        setEditingGrade(null);
         
         // Refresh the grades list
         fetchGrades();
@@ -147,6 +167,11 @@ export default function Grades() {
         
         setDeleteDialogOpen(false);
         setGradeToDelete(null);
+    };
+    
+    const handleEditClick = (grade: Grade) => {
+        setEditingGrade(grade);
+        setDialogOpen(true);
     };
     
     // Prepare data for the chart
@@ -308,7 +333,16 @@ export default function Grades() {
                                             </td>
                                             <td className="px-4 py-2">{new Date(grade.date).toLocaleDateString()}</td>
                                             <td className="px-4 py-2">{grade.description}</td>
-                                            <td className="px-4 py-2">
+                                            <td className="px-4 py-2 flex gap-2">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => handleEditClick(grade)}
+                                                    className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+                                                >
+                                                    <Pencil size={16} />
+                                                    <span className="sr-only">Edit</span>
+                                                </Button>
                                                 <Button 
                                                     variant="ghost" 
                                                     size="sm"
@@ -333,6 +367,8 @@ export default function Grades() {
                 onOpenChange={setDialogOpen}
                 onAddGrade={handleAddGrade}
                 existingSubjects={subjects}
+                editingGrade={editingGrade}
+                isEditing={!!editingGrade}
             />
             
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
