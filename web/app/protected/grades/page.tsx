@@ -292,7 +292,22 @@ export default function Grades() {
                                             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                                             <XAxis dataKey="date" />
                                             <YAxis domain={[1, 6]} />
-                                            <Tooltip />
+                                            <Tooltip 
+                                                contentStyle={{ 
+                                                    backgroundColor: 'hsl(var(--card))',
+                                                    border: '1px solid hsl(var(--border))',
+                                                    borderRadius: '0.5rem',
+                                                    color: 'hsl(var(--card-foreground))'
+                                                }}
+                                                labelStyle={{
+                                                    color: 'hsl(var(--card-foreground))',
+                                                    fontWeight: 'bold',
+                                                    marginBottom: '0.5rem'
+                                                }}
+                                                itemStyle={{
+                                                    color: 'hsl(var(--card-foreground))'
+                                                }}
+                                            />
                                             <Legend />
                                             {subjects.map((subject) => (
                                                 <Line 
