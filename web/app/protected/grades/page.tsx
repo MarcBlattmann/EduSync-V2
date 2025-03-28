@@ -223,7 +223,7 @@ export default function Grades() {
             </header>
             
             <div className="flex flex-col gap-4 p-4">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <h2 className="text-2xl font-bold">Your Grades</h2>
                     <Button onClick={() => setDialogOpen(true)} className="flex gap-2">
                         <Plus size={16} />
@@ -244,7 +244,7 @@ export default function Grades() {
                     <>
                         <div className="grid gap-4 md:grid-cols-2">
                             {/* Stats Card */}
-                            <div className="rounded-lg border bg-card p-6 shadow-sm">
+                            <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">
                                 <div className="flex flex-col space-y-1.5">
                                     <h3 className="text-lg font-semibold">Grade Statistics</h3>
                                     <p className="text-sm text-muted-foreground">Your overall performance</p>
@@ -252,13 +252,13 @@ export default function Grades() {
                                 <div className="mt-6 flex items-center justify-between">
                                     <div>
                                         <p className="text-sm text-muted-foreground">Average Grade</p>
-                                        <div className={`text-4xl font-bold ${averageGrade ? getAverageGradeTextColor(averageGrade) : ''}`}>
+                                        <div className={`text-3xl sm:text-4xl font-bold ${averageGrade ? getAverageGradeTextColor(averageGrade) : ''}`}>
                                             {averageGrade ?? 'N/A'}
                                         </div>
                                     </div>
                                     <div>
                                         <p className="text-sm text-muted-foreground">Total Entries</p>
-                                        <div className="text-4xl font-bold">{grades.length}</div>
+                                        <div className="text-3xl sm:text-4xl font-bold">{grades.length}</div>
                                     </div>
                                 </div>
                                 
@@ -266,7 +266,7 @@ export default function Grades() {
                                 <div className="mt-6">
                                     <p className="text-sm font-medium border-b pb-2 mb-2">Average by Subject</p>
                                     <div className="overflow-y-auto max-h-40">
-                                        <div className="grid grid-cols-2 gap-y-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2">
                                             {Object.entries(subjectAverages).map(([subject, average]) => (
                                                 <div key={subject} className="flex justify-between items-center pr-4">
                                                     <span className="font-medium truncate mr-2">{subject}:</span>
@@ -281,7 +281,7 @@ export default function Grades() {
                             </div>
                             
                             {/* Chart Card */}
-                            <div className="rounded-lg border bg-card p-6 shadow-sm">
+                            <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">
                                 <div className="flex flex-col space-y-1.5">
                                     <h3 className="text-lg font-semibold">Grade History</h3>
                                     <p className="text-sm text-muted-foreground">Performance over time</p>
@@ -290,8 +290,8 @@ export default function Grades() {
                                     <ResponsiveContainer width="100%" height="100%">
                                         <LineChart data={prepareChartData()}>
                                             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                                            <XAxis dataKey="date" />
-                                            <YAxis domain={[1, 6]} />
+                                            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                                            <YAxis domain={[1, 6]} tick={{ fontSize: 12 }} />
                                             <Tooltip 
                                                 contentStyle={{ 
                                                     backgroundColor: 'hsl(var(--card))',
@@ -326,7 +326,8 @@ export default function Grades() {
                             </div>
                         </div>
 
-                        <div className="border rounded-md">
+                        {/* Table for desktop, Cards for mobile */}
+                        <div className="hidden sm:block border rounded-md">
                             <table className="w-full">
                                 <thead className="bg-muted/50">
                                     <tr>
@@ -372,6 +373,50 @@ export default function Grades() {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile card view */}
+                        <div className="sm:hidden flex flex-col gap-3">
+                            {grades.map((grade) => (
+                                <div key={grade.id} className="border rounded-md p-3 bg-card">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="font-medium">{grade.subject}</h4>
+                                        <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getGradeColor(grade.grade)}`}>
+                                            {grade.grade}
+                                        </span>
+                                    </div>
+                                    <div className="text-sm mb-1">
+                                        <span className="text-muted-foreground">Date: </span>
+                                        {new Date(grade.date).toLocaleDateString()}
+                                    </div>
+                                    {grade.description && (
+                                        <div className="text-sm mb-3">
+                                            <span className="text-muted-foreground">Description: </span>
+                                            {grade.description}
+                                        </div>
+                                    )}
+                                    <div className="flex justify-end gap-2 mt-2 border-t pt-2">
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm"
+                                            onClick={() => handleEditClick(grade)}
+                                            className="h-9 w-9 p-0 text-muted-foreground hover:text-primary"
+                                        >
+                                            <Pencil size={16} />
+                                            <span className="sr-only">Edit</span>
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm"
+                                            onClick={() => handleDeleteClick(grade.id)}
+                                            className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        >
+                                            <Trash2 size={16} />
+                                            <span className="sr-only">Delete</span>
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </>
                 )}
