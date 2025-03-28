@@ -91,7 +91,7 @@ export default function Grades() {
                 }
                 
                 // Extract unique subjects for the dropdown
-                const uniqueSubjects = [...new Set(gradesData?.map(g => g.subject) || [])];
+                const uniqueSubjects = Array.from(new Set(gradesData?.map(g => g.subject) || []));
                 setSubjects(uniqueSubjects);
             }
         }
