@@ -1,14 +1,16 @@
 import { signInAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 
 export default async function Login(props: { searchParams: Promise<Message> }) {
   const searchParams = await props.searchParams;
   return (
-    <form className="flex-1 flex flex-col min-w-64">
+    <form className="flex-1 flex flex-col min-w-64 max-w-80 mx-auto">
       <h1 className="text-2xl font-medium">Sign in</h1>
       <p className="text-sm text-foreground">
         Don't have an account?{" "}
@@ -16,7 +18,18 @@ export default async function Login(props: { searchParams: Promise<Message> }) {
           Sign up
         </Link>
       </p>
-      <div className="flex flex-col gap-2 [&>input]:mb-3 mt-8">
+      
+      <div className="mt-6">
+        <GoogleSignInButton />
+      </div>
+      
+      <div className="flex items-center my-3">
+        <Separator className="w-16 flex-grow-0" />
+        <span className="px-3 text-xs text-muted-foreground mx-auto">OR</span>
+        <Separator className="w-16 flex-grow-0" />
+      </div>
+      
+      <div className="flex flex-col gap-2 [&>input]:mb-3">
         <Label htmlFor="email">Email</Label>
         <Input name="email" placeholder="you@example.com" required />
         <div className="flex justify-between items-center">
