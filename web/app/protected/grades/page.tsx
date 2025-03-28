@@ -17,6 +17,16 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { 
+    ResponsiveContainer, 
+    LineChart, 
+    Line, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip,
+    Legend 
+} from "recharts";
 
 interface Grade {
   id: string;
@@ -35,6 +45,8 @@ export default function Grades() {
     const supabase = createClient();
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [gradeToDelete, setGradeToDelete] = useState<string | null>(null);
+    const [averageGrade, setAverageGrade] = useState<number | null>(null);
+    const [subjectAverages, setSubjectAverages] = useState<Record<string, number>>({});
 
     const fetchGrades = async () => {
         setIsLoading(true);
@@ -51,6 +63,32 @@ export default function Grades() {
                 console.error('Error fetching grades:', error);
             } else {
                 setGrades(gradesData || []);
+                
+                // Calculate average grade
+                if (gradesData && gradesData.length > 0) {
+                    // Overall average
+                    const sum = gradesData.reduce((acc, grade) => acc + grade.grade, 0);
+                    setAverageGrade(parseFloat((sum / gradesData.length).toFixed(2)));
+                    
+                    // Calculate averages by subject
+                    const subjectTotals: Record<string, { sum: number; count: number }> = {};
+                    gradesData.forEach(grade => {
+                        if (!subjectTotals[grade.subject]) {
+                            subjectTotals[grade.subject] = { sum: 0, count: 0 };
+                        }
+                        subjectTotals[grade.subject].sum += grade.grade;
+                        subjectTotals[grade.subject].count += 1;
+                    });
+                    
+                    const averages: Record<string, number> = {};
+                    Object.entries(subjectTotals).forEach(([subject, { sum, count }]) => {
+                        averages[subject] = parseFloat((sum / count).toFixed(2));
+                    });
+                    setSubjectAverages(averages);
+                } else {
+                    setAverageGrade(null);
+                    setSubjectAverages({});
+                }
                 
                 // Extract unique subjects for the dropdown
                 const uniqueSubjects = [...new Set(gradesData?.map(g => g.subject) || [])];
@@ -111,6 +149,32 @@ export default function Grades() {
         setGradeToDelete(null);
     };
     
+    // Prepare data for the chart
+    const prepareChartData = () => {
+        // Sort grades by date (ascending)
+        const sortedGrades = [...grades].sort((a, b) => 
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+        
+        return sortedGrades.map(grade => ({
+            date: new Date(grade.date).toLocaleDateString(),
+            grade: grade.grade,
+            subject: grade.subject
+        }));
+    };
+
+    // Get a color for each unique subject
+    const getSubjectColors = () => {
+        const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#00C49F'];
+        const subjectColors: Record<string, string> = {};
+        
+        subjects.forEach((subject, index) => {
+            subjectColors[subject] = colors[index % colors.length];
+        });
+        
+        return subjectColors;
+    };
+    
     return (
         <>
             <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
@@ -140,40 +204,107 @@ export default function Grades() {
                         <p className="text-sm">Add your first grade to get started</p>
                     </div>
                 ) : (
-                    <div className="border rounded-md">
-                        <table className="w-full">
-                            <thead className="bg-muted/50">
-                                <tr>
-                                    <th className="px-4 py-2 text-left font-medium">Subject</th>
-                                    <th className="px-4 py-2 text-left font-medium">Grade</th>
-                                    <th className="px-4 py-2 text-left font-medium">Date</th>
-                                    <th className="px-4 py-2 text-left font-medium">Description</th>
-                                    <th className="px-4 py-2 text-left font-medium">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {grades.map((grade) => (
-                                    <tr key={grade.id} className="border-t">
-                                        <td className="px-4 py-2">{grade.subject}</td>
-                                        <td className="px-4 py-2">{grade.grade}</td>
-                                        <td className="px-4 py-2">{new Date(grade.date).toLocaleDateString()}</td>
-                                        <td className="px-4 py-2">{grade.description}</td>
-                                        <td className="px-4 py-2">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm"
-                                                onClick={() => handleDeleteClick(grade.id)}
-                                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                            >
-                                                <Trash2 size={16} />
-                                                <span className="sr-only">Delete</span>
-                                            </Button>
-                                        </td>
+                    <>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {/* Stats Card */}
+                            <div className="rounded-lg border bg-card p-6 shadow-sm">
+                                <div className="flex flex-col space-y-1.5">
+                                    <h3 className="text-lg font-semibold">Grade Statistics</h3>
+                                    <p className="text-sm text-muted-foreground">Your overall performance</p>
+                                </div>
+                                <div className="mt-6 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Average Grade</p>
+                                        <div className="text-4xl font-bold">{averageGrade ?? 'N/A'}</div>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Total Entries</p>
+                                        <div className="text-4xl font-bold">{grades.length}</div>
+                                    </div>
+                                </div>
+                                
+                                {/* Subject Averages */}
+                                <div className="mt-6">
+                                    <p className="text-sm font-medium border-b pb-2 mb-2">Average by Subject</p>
+                                    <div className="overflow-y-auto max-h-40">
+                                        <div className="grid grid-cols-2 gap-y-2">
+                                            {Object.entries(subjectAverages).map(([subject, average]) => (
+                                                <div key={subject} className="flex justify-between items-center pr-4">
+                                                    <span className="font-medium truncate mr-2">{subject}:</span>
+                                                    <span className="font-semibold">{average}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Chart Card */}
+                            <div className="rounded-lg border bg-card p-6 shadow-sm">
+                                <div className="flex flex-col space-y-1.5">
+                                    <h3 className="text-lg font-semibold">Grade History</h3>
+                                    <p className="text-sm text-muted-foreground">Performance over time</p>
+                                </div>
+                                <div className="h-64 mt-4">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={prepareChartData()}>
+                                            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                                            <XAxis dataKey="date" />
+                                            <YAxis domain={[1, 6]} />
+                                            <Tooltip />
+                                            <Legend />
+                                            {subjects.map((subject) => (
+                                                <Line 
+                                                    key={subject}
+                                                    type="monotone"
+                                                    dataKey={(data) => data.subject === subject ? data.grade : null}
+                                                    name={subject}
+                                                    stroke={getSubjectColors()[subject]}
+                                                    activeDot={{ r: 8 }}
+                                                    connectNulls
+                                                />
+                                            ))}
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="border rounded-md">
+                            <table className="w-full">
+                                <thead className="bg-muted/50">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left font-medium">Subject</th>
+                                        <th className="px-4 py-2 text-left font-medium">Grade</th>
+                                        <th className="px-4 py-2 text-left font-medium">Date</th>
+                                        <th className="px-4 py-2 text-left font-medium">Description</th>
+                                        <th className="px-4 py-2 text-left font-medium">Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {grades.map((grade) => (
+                                        <tr key={grade.id} className="border-t">
+                                            <td className="px-4 py-2">{grade.subject}</td>
+                                            <td className="px-4 py-2">{grade.grade}</td>
+                                            <td className="px-4 py-2">{new Date(grade.date).toLocaleDateString()}</td>
+                                            <td className="px-4 py-2">{grade.description}</td>
+                                            <td className="px-4 py-2">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => handleDeleteClick(grade.id)}
+                                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                >
+                                                    <Trash2 size={16} />
+                                                    <span className="sr-only">Delete</span>
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
             
