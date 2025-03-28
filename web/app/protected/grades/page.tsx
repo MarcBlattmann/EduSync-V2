@@ -174,6 +174,18 @@ export default function Grades() {
         
         return subjectColors;
     };
+
+    const getGradeColor = (grade: number) => {
+        if (grade >= 5) return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+        if (grade >= 4) return "bg-orange-200 text-orange-700 dark:bg-orange-800/50 dark:text-orange-300";
+        return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+    };
+
+    const getAverageGradeTextColor = (grade: number) => {
+        if (grade >= 5) return "text-green-600 dark:text-green-400";
+        if (grade >= 4) return "text-orange-500 dark:text-orange-300";
+        return "text-red-600 dark:text-red-400";
+    };
     
     return (
         <>
@@ -215,7 +227,9 @@ export default function Grades() {
                                 <div className="mt-6 flex items-center justify-between">
                                     <div>
                                         <p className="text-sm text-muted-foreground">Average Grade</p>
-                                        <div className="text-4xl font-bold">{averageGrade ?? 'N/A'}</div>
+                                        <div className={`text-4xl font-bold ${averageGrade ? getAverageGradeTextColor(averageGrade) : ''}`}>
+                                            {averageGrade ?? 'N/A'}
+                                        </div>
                                     </div>
                                     <div>
                                         <p className="text-sm text-muted-foreground">Total Entries</p>
@@ -231,7 +245,9 @@ export default function Grades() {
                                             {Object.entries(subjectAverages).map(([subject, average]) => (
                                                 <div key={subject} className="flex justify-between items-center pr-4">
                                                     <span className="font-medium truncate mr-2">{subject}:</span>
-                                                    <span className="font-semibold">{average}</span>
+                                                    <span className={`font-semibold ${getAverageGradeTextColor(average)}`}>
+                                                        {average}
+                                                    </span>
                                                 </div>
                                             ))}
                                         </div>
@@ -285,7 +301,11 @@ export default function Grades() {
                                     {grades.map((grade) => (
                                         <tr key={grade.id} className="border-t">
                                             <td className="px-4 py-2">{grade.subject}</td>
-                                            <td className="px-4 py-2">{grade.grade}</td>
+                                            <td className="px-4 py-2">
+                                                <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getGradeColor(grade.grade)}`}>
+                                                    {grade.grade}
+                                                </span>
+                                            </td>
                                             <td className="px-4 py-2">{new Date(grade.date).toLocaleDateString()}</td>
                                             <td className="px-4 py-2">{grade.description}</td>
                                             <td className="px-4 py-2">
