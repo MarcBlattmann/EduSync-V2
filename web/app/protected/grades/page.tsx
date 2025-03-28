@@ -222,7 +222,7 @@ export default function Grades() {
                 </div>
             </header>
             
-            <div className="flex flex-col gap-4 p-4">
+            <div className="flex flex-col gap-4 px-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                     <h2 className="text-2xl font-bold">Your Grades</h2>
                     <Button onClick={() => setDialogOpen(true)} className="flex gap-2">
