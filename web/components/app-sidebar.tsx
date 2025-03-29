@@ -1,5 +1,6 @@
 "use client"
 
+import Image from 'next/image'
 import * as React from "react"
 import {
   AudioWaveform,
@@ -15,16 +16,19 @@ import {
   SquareTerminal,
 } from "lucide-react"
 
-import { TeamSwitcher } from "@/components/team-switcher"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarMenu,
+  SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { NavMain } from "./nav-main"
 import { NavUser } from "./nav-user"
+import Link from "next/link"
 
 // This is sample data.
 const data = {
@@ -33,18 +37,6 @@ const data = {
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  teams: [
-    {
-      name: "Math",
-      logo: GalleryVerticalEnd,
-      plan: "Tomas",
-    },
-    {
-        name: "German",
-        logo: GalleryVerticalEnd,
-        plan: "Johann",
-      }
-  ],
   navMain: [
     {
       title: "Home",
@@ -93,14 +85,31 @@ const data = {
           },
         ],
       }
-]
+  ]
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <Link href="/" className="w-full">
+              <div className="flex items-center px-2 pt-3">
+                <div className="font-semibold text-xl">
+                  {isCollapsed ? 
+                    "E"
+                    : 
+                    "EduSync"
+                  }
+                </div>
+              </div>
+            </Link>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
