@@ -12,6 +12,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -46,6 +47,11 @@ export function NavMain({
                   <SidebarMenuButton tooltip={item.title}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
+                    {item.url === "#" && (
+                      <SidebarMenuBadge className="ml-1.5 bg-orange-100 text-orange-800 dark:bg-orange-800/30 dark:text-orange-300">
+                        Soon
+                      </SidebarMenuBadge>
+                    )}
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
@@ -71,10 +77,14 @@ export function NavMain({
                   <SidebarMenuSub>
                     {item.items?.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
-                        {/* Fix: Use the Link asChild prop to prevent nesting <a> tags */}
                         <Link href={subItem.url} legacyBehavior passHref>
                           <SidebarMenuSubButton>
                             <span>{subItem.title}</span>
+                            {subItem.url === "#" && (
+                              <span className="ml-1.5 rounded-sm bg-orange-100 px-1 py-0.5 text-[10px] font-medium text-orange-800 dark:bg-orange-800/30 dark:text-orange-300">
+                                Soon
+                              </span>
+                            )}
                           </SidebarMenuSubButton>
                         </Link>
                       </SidebarMenuSubItem>
