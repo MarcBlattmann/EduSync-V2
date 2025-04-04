@@ -54,9 +54,9 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        // Fix: Use lowercase property names
-        iconLeft: (props) => <ChevronLeft className="h-4 w-4" />,
-        iconRight: (props) => <ChevronRight className="h-4 w-4" />,
+        // Fix: Use capitalized property names
+        IconLeft: (props) => <ChevronLeft className="h-4 w-4" />,
+        IconRight: (props) => <ChevronRight className="h-4 w-4" />,
       }}
       {...props}
     />
