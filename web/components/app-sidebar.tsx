@@ -33,8 +33,8 @@ import Link from "next/link"
 // This is sample data.
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
+    name: "Max Mustermann",
+    email: "m@mustermann.com",
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
