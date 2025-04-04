@@ -34,7 +34,7 @@ interface AddEventProps {
     color: string;
   }) => void;
   onDeleteEvent?: (eventId: string) => void; // New prop for delete functionality
-  eventDate?: Date;
+  eventDate?: Date | null; // Updated to accept null as well
   editingEvent?: {
     id: string;
     title: string;
