@@ -53,7 +53,7 @@ const data = {
       items: [
         {
           title: "Calendar",
-          url: "#",
+          url: "/protected/calendar",
         },
         {
           title: "Exams",
