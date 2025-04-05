@@ -92,7 +92,7 @@ export function DayEventsDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 justify-center">
               <CalendarIcon className="h-5 w-5" /> 
               {formattedDate}
             </DialogTitle>
@@ -120,15 +120,6 @@ export function DayEventsDialog({
             ) : (
               <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
                 {events.map(event => {
-                  const startTime = new Date(event.start_date).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  });
-                  const endTime = new Date(event.end_date).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  });
-                  
                   return (
                     <div 
                       key={event.id}
@@ -137,8 +128,8 @@ export function DayEventsDialog({
                         colorMap[event.color] || "bg-gray-100 dark:bg-gray-800"
                       )}
                     >
-                      <div className="flex justify-between items-start">
-                        <h4 className="font-semibold">{event.title}</h4>
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-semibold text-base">{event.title}</h4>
                         <div className="flex gap-1 ml-2">
                           <Button 
                             variant="ghost" 
@@ -164,12 +155,10 @@ export function DayEventsDialog({
                         </div>
                       </div>
                       
-                      <div className="text-sm mt-1">
-                        {startTime} - {endTime}
-                      </div>
+                      {/* Removed the "All-day event" text */}
                       
                       {event.description && (
-                        <div className="mt-2 text-sm border-t pt-2">
+                        <div className="mt-3 text-sm border-t pt-2">
                           {event.description}
                         </div>
                       )}
