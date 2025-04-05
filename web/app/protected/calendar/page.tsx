@@ -316,7 +316,7 @@ export default function Calendar() {
         </div>
       </header>
       
-      <div className="flex flex-col gap-4 px-2 sm:px-4 pb-4">
+      <div className="flex flex-col gap-4 px-6 pb-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <h2 className="text-2xl font-bold">Your Calendar</h2>
           <div className="flex flex-wrap items-start sm:items-center gap-2 w-full sm:w-auto">
