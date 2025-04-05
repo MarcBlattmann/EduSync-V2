@@ -300,173 +300,215 @@ export default function Calendar() {
         </div>
       </header>
       
-      <div className="flex flex-col gap-4 px-4 pb-4">
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div className="flex flex-col gap-4 px-2 sm:px-4 pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <h2 className="text-2xl font-bold">Your Calendar</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-start sm:items-center gap-2 w-full sm:w-auto">
             <div className="flex items-center rounded-md border bg-background">
-              <Button variant="ghost" size="sm" onClick={prevMonth}>
+              <Button variant="ghost" size="sm" onClick={prevMonth} className="p-1.5 sm:p-2">
                 <ChevronLeft size={18} />
               </Button>
-              <div className="px-2 py-1 font-medium min-w-[160px] text-center">
+              <div className="px-2 py-1 font-medium min-w-[120px] sm:min-w-[160px] text-center truncate">
                 {formatMonthYear(currentMonth)}
               </div>
-              <Button variant="ghost" size="sm" onClick={nextMonth}>
+              <Button variant="ghost" size="sm" onClick={nextMonth} className="p-1.5 sm:p-2">
                 <ChevronRight size={18} />
               </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={goToToday}>Today</Button>
-            <Button size="sm" onClick={() => setDialogOpen(true)} className="flex gap-2">
-              <Plus size={16} />
-              Add Event
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={goToToday}>Today</Button>
+              <Button size="sm" onClick={() => setDialogOpen(true)} className="flex gap-2">
+                <Plus size={16} />
+                <span className="hidden sm:inline">Add Event</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            </div>
           </div>
         </div>
         
-        {isLoading ? (
-          <div className="grid grid-cols-7 gap-2 h-[700px]">
-            {Array.from({ length: 42 }).map((_, i) => (
-              <Skeleton key={i} className="h-full w-full" />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-lg border shadow-sm overflow-hidden">
-            {/* Calendar header */}
-            <div className="grid grid-cols-7 bg-muted/70">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <div key={day} className="p-2 text-center font-medium border-r border-b last:border-r-0">
-                  {day}
-                </div>
-              ))}
-            </div>
-            
-            {/* Calendar days */}
-            <div className="grid grid-cols-7 bg-card min-h-[700px]">
-              {getDaysInMonth().map((dayInfo, index) => {
-                const dayEvents = getEventsForDay(dayInfo.date);
-                return (
-                  <div 
-                    key={index}
-                    className={cn(
-                      "min-h-[100px] border-r border-b p-1 last:border-r-0 relative group",
-                      !dayInfo.isCurrentMonth && "bg-muted/30 text-muted-foreground",
-                      dayInfo.isToday && "bg-primary/5"
-                    )}
-                    onClick={() => handleDayClick(dayInfo.date)}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div 
-                        className={cn(
-                          "h-7 w-7 rounded-full flex items-center justify-center text-sm font-medium",
-                          dayInfo.isToday && "bg-primary text-primary-foreground"
-                        )}
-                      >
-                        {dayInfo.date.getDate()}
+        {/* Layout container for calendar and events */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Calendar section - takes 2/3 of space on large screens */}
+          <div className={`${isLoading ? "" : "rounded-lg border shadow-sm overflow-hidden"} lg:col-span-2`}>
+            {isLoading ? (
+              <div className="grid grid-cols-7 gap-2 h-[500px]">
+                {Array.from({ length: 42 }).map((_, i) => (
+                  <Skeleton key={i} className="h-full w-full" />
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* Calendar grid view - responsive for both mobile and desktop */}
+                <div className="overflow-x-auto">
+                  {/* Calendar header */}
+                  <div className="grid grid-cols-7 bg-muted/70">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                      <div key={i} className="p-1 sm:p-2 text-center font-medium border-r border-b last:border-r-0 text-xs sm:text-sm">
+                        <span className="sm:hidden">{day}</span>
+                        <span className="hidden sm:inline">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i]}</span>
                       </div>
-                      {dayInfo.isCurrentMonth && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedDate(dayInfo.date);
-                            handleAddEventForDate();
-                          }}
-                        >
-                          <Plus size={14} />
-                        </Button>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-1 mt-1 max-h-[80px] overflow-y-auto">
-                      {dayEvents.slice(0, 3).map((event) => (
+                    ))}
+                  </div>
+                  
+                  {/* Calendar days */}
+                  <div className="grid grid-cols-7 bg-card min-h-[400px] sm:min-h-[500px] lg:min-h-[600px]">
+                    {getDaysInMonth().map((dayInfo, index) => {
+                      const dayEvents = getEventsForDay(dayInfo.date);
+                      return (
                         <div 
-                          key={event.id}
+                          key={index}
                           className={cn(
-                            "text-xs p-1 rounded-sm truncate cursor-pointer",
-                            colorMap[event.color] || "bg-gray-100 dark:bg-gray-800"
+                            "min-h-[60px] sm:min-h-[90px] border-r border-b p-0.5 sm:p-1 last:border-r-0 relative group",
+                            !dayInfo.isCurrentMonth && "bg-muted/30 text-muted-foreground",
+                            dayInfo.isToday && "bg-primary/5"
                           )}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditClick(event);
-                          }}
+                          onClick={() => handleDayClick(dayInfo.date)}
                         >
-                          {event.title}
+                          <div className="flex justify-between items-center">
+                            <div 
+                              className={cn(
+                                "h-5 w-5 sm:h-7 sm:w-7 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium",
+                                dayInfo.isToday && "bg-primary text-primary-foreground"
+                              )}
+                            >
+                              {dayInfo.date.getDate()}
+                            </div>
+                            {dayInfo.isCurrentMonth && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-4 w-4 sm:h-6 sm:w-6 p-0 opacity-0 group-hover:opacity-100"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDate(dayInfo.date);
+                                  handleAddEventForDate();
+                                }}
+                              >
+                                <Plus size={12} className="sm:hidden" />
+                                <Plus size={14} className="hidden sm:block" />
+                              </Button>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-1 mt-0.5 sm:mt-1 max-h-[40px] sm:max-h-[60px] overflow-y-auto">
+                            {dayEvents.slice(0, 2).map((event) => (
+                              <div 
+                                key={event.id}
+                                className={cn(
+                                  "text-[10px] sm:text-xs p-0.5 sm:p-1 rounded-sm truncate cursor-pointer",
+                                  colorMap[event.color] || "bg-gray-100 dark:bg-gray-800"
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditClick(event);
+                                }}
+                              >
+                                {event.title}
+                              </div>
+                            ))}
+                            
+                            {dayEvents.length > 2 && (
+                              <div className="text-[10px] sm:text-xs text-muted-foreground pl-0.5 sm:pl-1">
+                                + {dayEvents.length - 2} more
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      ))}
-                      
-                      {dayEvents.length > 3 && (
-                        <div className="text-xs text-muted-foreground pl-1">
-                          + {dayEvents.length - 3} more
-                        </div>
-                      )}
-                    </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              </>
+            )}
           </div>
-        )}
-        
-        {/* Events for mobile view */}
-        <div className="sm:hidden mt-4">
-          <h3 className="text-lg font-semibold mb-2">Upcoming Events</h3>
-          <div className="flex flex-col gap-2">
-            {events
-              .filter(event => new Date(event.start_date) >= new Date())
-              .slice(0, 5)
-              .map(event => {
-                const start = new Date(event.start_date);
-                const end = new Date(event.end_date);
-                
-                return (
-                  <div 
-                    key={event.id} 
-                    className="border p-3 rounded-md bg-card"
-                    onClick={() => handleEditClick(event)}
-                  >
-                    <div className="flex justify-between">
-                      <h4 className="font-medium">{event.title}</h4>
-                      <div className="flex gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditClick(event);
-                          }}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Pencil size={14} />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(event.id);
-                          }}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      <CalendarIcon size={14} />
-                      {start.toLocaleDateString()}
-                    </div>
-                    {event.description && (
-                      <div className="text-sm mt-2">{event.description}</div>
-                    )}
+          
+          {/* Upcoming events section - takes 1/3 of space on large screens */}
+          <div className="rounded-lg border shadow-sm p-3 sm:p-4">
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <CalendarIcon size={18} className="text-muted-foreground" />
+              Upcoming Events
+            </h3>
+            
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="flex flex-col gap-2">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
                   </div>
-                );
-              })}
-              
-            {events.filter(event => new Date(event.start_date) >= new Date()).length === 0 && (
-              <div className="text-muted-foreground text-center p-4">
-                No upcoming events
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-[300px] sm:max-h-[400px] lg:max-h-[600px] overflow-y-auto pr-1">
+                {events
+                  .filter(event => new Date(event.start_date) >= new Date())
+                  .map(event => {
+                    const start = new Date(event.start_date);
+                    
+                    return (
+                      <div 
+                        key={event.id} 
+                        className="border p-2 sm:p-3 rounded-md bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+                        onClick={() => handleEditClick(event)}
+                      >
+                        <div className="flex justify-between">
+                          <h4 className="font-medium text-sm sm:text-base">{event.title}</h4>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditClick(event);
+                              }}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Pencil size={14} />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(event.id);
+                              }}
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 size={14} />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className={cn(
+                            "w-2 h-2 rounded-full",
+                            `bg-${event.color}-500`
+                          )} />
+                          <div className="text-xs text-muted-foreground">
+                            {start.toLocaleDateString()}
+                          </div>
+                        </div>
+                        {event.description && (
+                          <div className="text-xs sm:text-sm mt-2 line-clamp-2">{event.description}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  
+                {events.filter(event => new Date(event.start_date) >= new Date()).length === 0 && (
+                  <div className="text-muted-foreground text-center p-4 border rounded-md bg-card/50">
+                    <p className="text-sm">No upcoming events</p>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => setDialogOpen(true)}
+                      className="mt-2"
+                    >
+                      Add your first event
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
