@@ -104,7 +104,7 @@ export function DayEventsDialog({
               </h3>
               <Button 
                 onClick={() => {
-                  onAddEvent();
+                  onAddEvent(); // This should internally reset editing state
                   onOpenChange(false);
                 }} 
                 size="sm"

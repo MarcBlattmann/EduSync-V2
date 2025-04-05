@@ -186,7 +186,7 @@ export default function Calendar() {
   };
   
   const handleAddEventForDate = () => {
-    setEditingEvent(null);
+    setEditingEvent(null); // Make sure editing state is null
     setDialogOpen(true);
   };
 
@@ -317,7 +317,10 @@ export default function Calendar() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={goToToday}>Today</Button>
-              <Button size="sm" onClick={() => setDialogOpen(true)} className="flex gap-2">
+              <Button size="sm" onClick={() => {
+                setEditingEvent(null); // Reset editing state first
+                setDialogOpen(true);
+              }} className="flex gap-2">
                 <Plus size={16} />
                 <span className="hidden sm:inline">Add Event</span>
                 <span className="sm:hidden">Add</span>
@@ -381,6 +384,7 @@ export default function Calendar() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedDate(dayInfo.date);
+                                  setEditingEvent(null); // Reset editing state first
                                   handleAddEventForDate();
                                 }}
                               >
@@ -502,7 +506,10 @@ export default function Calendar() {
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={() => setDialogOpen(true)}
+                      onClick={() => {
+                        setEditingEvent(null); // Reset editing state first
+                        setDialogOpen(true);
+                      }}
                       className="mt-2"
                     >
                       Add your first event
