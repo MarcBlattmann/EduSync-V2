@@ -59,6 +59,7 @@ export default function Calendar() {
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [isMobileView, setIsMobileView] = useState(false);
   
   const supabase = createClient();
 
@@ -100,6 +101,21 @@ export default function Calendar() {
   useEffect(() => {
     fetchEvents();
   }, [currentMonth]);
+
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobileView(window.innerWidth < 640); // Same breakpoint as sm: in Tailwind
+    };
+    
+    // Check on initial load
+    checkIfMobile();
+    
+    // Add listener for window resizing
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   const handleAddEvent = async (newEvent: Omit<CalendarEvent, 'id' | 'created_at'>) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -403,8 +419,15 @@ export default function Calendar() {
                                   colorMap[event.color] || "bg-gray-100 dark:bg-gray-800"
                                 )}
                                 onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditClick(event);
+                                  e.stopPropagation(); // Stop event bubbling
+                                  
+                                  // On mobile, always open day view instead of edit dialog
+                                  if (isMobileView) {
+                                    handleDayClick(dayInfo.date);
+                                  } else {
+                                    // On desktop, keep existing behavior (edit event)
+                                    handleEditClick(event);
+                                  }
                                 }}
                               >
                                 {event.title}
