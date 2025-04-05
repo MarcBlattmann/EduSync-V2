@@ -208,20 +208,23 @@ export function AddEventDialog({
               />
             </div>
           </div>
-          <DialogFooter className="flex justify-between items-center">
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between items-center">
             {/* Add delete button when in edit mode */}
             {isEditing && onDeleteEvent && (
               <Button 
                 type="button" 
                 variant="destructive"
                 onClick={handleDelete}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 w-full sm:w-auto order-2 sm:order-1"
               >
                 <Trash2 className="h-4 w-4" />
                 Delete
               </Button>
             )}
-            <Button type="submit" className={isEditing ? "" : "w-full"}>
+            <Button 
+              type="submit" 
+              className={`${isEditing ? "w-full sm:w-auto" : "w-full"} order-1 sm:order-2`}
+            >
               {isEditing ? 'Save Changes' : 'Save Event'}
             </Button>
           </DialogFooter>
