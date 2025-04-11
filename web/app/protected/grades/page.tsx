@@ -369,50 +369,6 @@ export default function Grades() {
                 onDelete={handleDeleteClick}
               />
             </div>
-
-            {/* Mobile card view - keep this for mobile experience */}
-            <div className="sm:hidden flex flex-col gap-3">
-              {grades.map((grade) => (
-                <div key={grade.id} className="border rounded-md p-3 bg-card">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium">{grade.subject}</h4>
-                    <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-sm font-medium ${getGradeColor(grade.grade)}`}>
-                      {grade.grade}
-                    </span>
-                  </div>
-                  <div className="text-sm mb-1">
-                    <span className="text-muted-foreground">Date: </span>
-                    {new Date(grade.date).toLocaleDateString()}
-                  </div>
-                  {grade.description && (
-                    <div className="text-sm mb-3">
-                      <span className="text-muted-foreground">Description: </span>
-                      {grade.description}
-                    </div>
-                  )}
-                  <div className="flex justify-end gap-2 mt-2 border-t pt-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleEditClick(grade)}
-                      className="h-9 w-9 p-0 text-muted-foreground hover:text-primary"
-                    >
-                      <Pencil size={16} />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleDeleteClick(grade.id)}
-                      className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 size={16} />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
           </>
         )}
       </div>
