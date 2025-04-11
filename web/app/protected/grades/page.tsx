@@ -29,7 +29,7 @@ interface Grade {
   subject: string;
   grade: number;
   date: string;
-  description: string; // Changed from optional to required to match dialog expectations
+  description?: string; // Changed to optional to match grades-table component
   created_at: string;
 }
 

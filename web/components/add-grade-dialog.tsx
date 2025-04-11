@@ -36,7 +36,7 @@ interface AddGradeProps {
     subject: string;
     grade: number;
     date: string;
-    description: string;
+    description?: string; // Made optional to match Grade interface
     created_at: string;
   } | null;
   isEditing?: boolean;
@@ -71,7 +71,7 @@ export function AddGradeDialog({
       setGrade(editingGrade.grade);
       setGradeInput(editingGrade.grade.toString());
       setDate(editingGrade.date);
-      setDescription(editingGrade.description);
+      setDescription(editingGrade.description || ''); // Added fallback for undefined
     } else {
       // Reset form when not editing
       setSubject("");

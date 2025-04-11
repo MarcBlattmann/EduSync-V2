@@ -221,11 +221,11 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
 
       {/* Grades table */}
       <div className="rounded-md border">
-        <Table>
+        <Table className="[&_td]:py-2 [&_td]:px-4">
           <TableHeader>
-            <TableRow>
+            <TableRow className="h-10">
               <TableHead
-                className="cursor-pointer"
+                className="cursor-pointer py-2"
                 onClick={() => handleSort("subject")}
               >
                 <div className="flex items-center">
@@ -233,7 +233,7 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer w-[100px] text-center"
+                className="cursor-pointer w-[100px] text-center py-2"
                 onClick={() => handleSort("grade")}
               >
                 <div className="flex items-center justify-center">
@@ -241,16 +241,16 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer w-[120px]"
+                className="cursor-pointer w-[120px] py-2"
                 onClick={() => handleSort("date")}
               >
                 <div className="flex items-center">
                   Date {renderSortIcon("date")}
                 </div>
               </TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead className="py-2">Description</TableHead>
               {(onEdit || onDelete) && (
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
+                <TableHead className="w-[100px] text-right py-2">Actions</TableHead>
               )}
             </TableRow>
           </TableHeader>
