@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, SortAsc, SortDesc, X } from "lucide-react";
+import { Search, SortAsc, SortDesc, X, Pencil, Trash2 } from "lucide-react";
 
 // Grade interface
 interface Grade {
@@ -36,9 +36,11 @@ interface Grade {
 interface GradesTableProps {
   grades: Grade[];
   subjects: string[];
+  onEdit?: (grade: Grade) => void;
+  onDelete?: (gradeId: string) => void;
 }
 
-export function GradesTable({ grades, subjects }: GradesTableProps) {
+export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableProps) {
   // State for filters and sorting
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -99,9 +101,22 @@ export function GradesTable({ grades, subjects }: GradesTableProps) {
       // Apply sorting
       if (!sortConfig.key) return 0;
       
+      // Get values safely, handling potential undefined values
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
       
+      // Handle undefined values in the comparison
+      if (aValue === undefined && bValue === undefined) {
+        return 0;
+      }
+      if (aValue === undefined) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+      if (bValue === undefined) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+      
+      // Safe comparison now that we've handled undefined cases
       if (aValue < bValue) {
         return sortConfig.direction === "asc" ? -1 : 1;
       }
@@ -134,7 +149,7 @@ export function GradesTable({ grades, subjects }: GradesTableProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 justify-between">
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
@@ -234,12 +249,15 @@ export function GradesTable({ grades, subjects }: GradesTableProps) {
                 </div>
               </TableHead>
               <TableHead>Description</TableHead>
+              {(onEdit || onDelete) && (
+                <TableHead className="w-[100px] text-right">Actions</TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredGrades.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={onEdit || onDelete ? 5 : 4} className="h-24 text-center">
                   No grades found matching the filters.
                 </TableCell>
               </TableRow>
@@ -254,6 +272,33 @@ export function GradesTable({ grades, subjects }: GradesTableProps) {
                   </TableCell>
                   <TableCell>{formatDate(grade.date)}</TableCell>
                   <TableCell>{grade.description || "—"}</TableCell>
+                  {(onEdit || onDelete) && (
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        {onEdit && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onEdit(grade)}
+                            title="Edit grade"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {onDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onDelete(grade.id)}
+                            title="Delete grade"
+                            className="text-destructive hover:text-destructive/90"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
@@ -262,7 +307,7 @@ export function GradesTable({ grades, subjects }: GradesTableProps) {
       </div>
       
       {/* Table footer with count */}
-      <div className="flex justify-between items-center text-sm text-muted-foreground mb-10">
+      <div className="flex justify-between items-center text-sm text-muted-foreground">
         <div>
           Showing {filteredGrades.length} of {grades.length} grades
         </div>

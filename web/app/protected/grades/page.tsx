@@ -362,7 +362,12 @@ export default function Grades() {
 
             {/* Use GradesTable component for a better experience with sorting and filtering */}
             <div className="my-4">
-              <GradesTable grades={grades} subjects={subjects} />
+              <GradesTable 
+                grades={grades} 
+                subjects={subjects} 
+                onEdit={handleEditClick}  
+                onDelete={handleDeleteClick}
+              />
             </div>
 
             {/* Mobile card view - keep this for mobile experience */}
