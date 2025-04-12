@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { UpcomingEvents } from "@/components/upcoming-events";
 
 // Define types for the grade data
 interface Grade {
@@ -17,6 +18,18 @@ interface Grade {
   date: string;
   description?: string;
   created_at: string;
+}
+
+// Define calendar event type
+interface CalendarEvent {
+  id: string;
+  title: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  color: string;
+  created_at: string;
+  user_id: string;
 }
 
 export default async function ProtectedPage() {
@@ -35,6 +48,15 @@ export default async function ProtectedPage() {
     .from('grades')
     .select('*')
     .eq('user_id', user.id);
+
+  // Fetch upcoming events
+  const { data: eventsData } = await supabase
+    .from('calendar_events')
+    .select('*')
+    .eq('user_id', user.id)
+    .gte('start_date', new Date().toISOString())
+    .order('start_date', { ascending: true })
+    .limit(5);
 
   // Calculate averages
   let averageGrade: number | null = null;
@@ -76,7 +98,7 @@ export default async function ProtectedPage() {
           Home
         </div>
       </header>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-y-auto">
         <div className="grid auto-rows-min gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
@@ -125,7 +147,18 @@ export default async function ProtectedPage() {
               )}
             </CardContent>
           </Card>
-          <div className="aspect-video rounded-xl bg-muted/50" />
+          
+          {/* Upcoming Events Card */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Upcoming Events</CardTitle>
+              <CardDescription>Your scheduled calendar events</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UpcomingEvents events={eventsData || []} />
+            </CardContent>
+          </Card>
+          
           <div className="aspect-video rounded-xl bg-muted/50" />
         </div>
         <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
