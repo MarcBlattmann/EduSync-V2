@@ -94,6 +94,10 @@ export function NavUser({
     router.push('/sign-in')
   }
 
+  const navigateToSettings = () => {
+    router.push('/protected/settings')
+  }
+
   // Display initials for avatar fallback
   const initials = user.name
     ? user.name
@@ -160,7 +164,7 @@ export function NavUser({
                 )}
                 {isDark ? "Light" : "Dark"} Mode
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={navigateToSettings}>
                 <Settings className="size-4 mr-2" />
                 Settings
               </DropdownMenuItem>
