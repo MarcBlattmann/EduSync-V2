@@ -101,8 +101,8 @@ function UpcomingEventsBase({ events }: { events: CalendarEvent[] }) {
             ))}
           </div>
           
-          <Button variant="outline" size="sm" className="w-full mt-auto" asChild prefetch={true}>
-            <Link href="/protected/calendar" className="flex justify-center items-center">
+          <Button variant="outline" size="sm" className="w-full mt-auto" asChild>
+            <Link href="/protected/calendar" prefetch={true} className="flex justify-center items-center">
               View All Events
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
