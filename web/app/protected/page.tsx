@@ -149,12 +149,12 @@ export default async function ProtectedPage() {
           </Card>
           
           {/* Upcoming Events Card */}
-          <Card>
+          <Card className="flex flex-col">
             <CardHeader className="pb-2">
               <CardTitle>Upcoming Events</CardTitle>
               <CardDescription>Your scheduled calendar events</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow flex flex-col pb-6">
               <UpcomingEvents events={eventsData || []} />
             </CardContent>
           </Card>
