@@ -15,6 +15,7 @@ import {
   Settings,
   Sparkles,
   Sun,
+  MessageSquarePlus,
 } from "lucide-react"
 
 import {
@@ -142,9 +143,11 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles className="size-4 mr-2" />
-                Upgrade to Pro
+              <DropdownMenuItem asChild>
+                <a href="https://edu-sync.supahub.com/b/feature-requests" target="_blank" rel="noopener noreferrer" className="flex items-center cursor-pointer">
+                  <MessageSquarePlus className="size-4 mr-2" />
+                  Request Feature
+                </a>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
