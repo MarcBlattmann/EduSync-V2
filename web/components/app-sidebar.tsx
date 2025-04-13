@@ -14,6 +14,7 @@ import {
   PieChart,
   Settings2,
   SquareTerminal,
+  Calendar as CalendarIcon,
 } from "lucide-react"
 
 import {
@@ -42,49 +43,21 @@ const data = {
       title: "Home",
       url: "/protected",
       icon: Home,
-      isActive: false,
       noSubmenu: true, 
+      isHome: true 
     },
     {
-      title: "Activity",
-      url: "#",
-      icon: Map,
-      isActive: true,
-      items: [
-        {
-          title: "Calendar",
-          url: "/protected/calendar",
-        },
-        {
-          title: "Exams",
-          url: "#",
-        },
-        {
-          title: "Tasks",
-          url: "#",
-        },
-      ],
+      title: "Calendar",
+      url: "/protected/calendar",
+      icon: CalendarIcon,
+      noSubmenu: true,
     },
     {
-        title: "Info",
-        url: "#",
-        icon: BookOpen,
-        isActive: true,
-        items: [
-          {
-            title: "Grades",
-            url: "/protected/grades",
-          },
-          {
-            title: "Classes",
-            url: "#",
-          },
-          {
-            title: "Absences",
-            url: "#",
-          },
-        ],
-      }
+      title: "Grades",
+      url: "/protected/grades",
+      icon: BookOpen,
+      noSubmenu: true,
+    }
   ]
 }
 
