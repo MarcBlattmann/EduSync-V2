@@ -2,18 +2,11 @@
 
 import Image from 'next/image'
 import * as React from "react"
+import { memo, useMemo } from "react"
 import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
   Home,
-  Map,
-  PieChart,
   Settings2,
-  SquareTerminal,
+  BookOpen,
   Calendar as CalendarIcon,
 } from "lucide-react"
 
@@ -31,8 +24,8 @@ import { NavMain } from "./nav-main"
 import { NavUser } from "./nav-user"
 import Link from "next/link"
 
-// This is sample data.
-const data = {
+// Move the data outside of the component to prevent recreation on each render
+const navigationData = {
   user: {
     name: "Max Mustermann",
     email: "m@mustermann.com",
@@ -59,38 +52,54 @@ const data = {
       noSubmenu: true,
     }
   ]
-}
+};
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+// Memoized header component
+const SidebarHeaderContent = memo(function SidebarHeaderContent({ isCollapsed }: { isCollapsed: boolean }) {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <Link href="/" className="w-full">
+          <div className="flex items-center px-2 pt-3">
+            <div className="font-semibold text-xl">
+              {isCollapsed ? "E" : "EduSync"}
+            </div>
+          </div>
+        </Link>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  );
+});
+
+// Memoized navigation items
+const NavigationItems = memo(function NavigationItems() {
+  return <NavMain items={navigationData.navMain} />;
+});
+
+// Memoized user information
+const UserInformation = memo(function UserInformation() {
+  return <NavUser user={navigationData.user} />;
+});
+
+// Main sidebar component with memoization
+function AppSidebarBase({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Link href="/" className="w-full">
-              <div className="flex items-center px-2 pt-3">
-                <div className="font-semibold text-xl">
-                  {isCollapsed ? 
-                    "E"
-                    : 
-                    "EduSync"
-                  }
-                </div>
-              </div>
-            </Link>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <SidebarHeaderContent isCollapsed={isCollapsed} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavigationItems />
       </SidebarContent>
       <SidebarFooter> 
-        <NavUser user={data.user} />
+        <UserInformation />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
 }
+
+export const AppSidebar = memo(AppSidebarBase);

@@ -63,52 +63,164 @@ const getGradeColor = (grade: number): string => {
 async function GradeStats({ userId }: { userId: string }) {
   const supabase = await createClient();
   
-  // Optimized query - use count and aggregation directly in SQL
-  // This is much faster than fetching all grades and calculating client-side
-  const { data: gradeStats } = await supabase.rpc('get_grade_stats', { 
-    user_id_param: userId 
-  }).single();
-  
-  let averageGrade: number | null = null;
-  let subjectAverages: Record<string, number> = {};
-  let totalEntries = 0;
-  
-  // If stored procedure isn't available, fall back to simplified query
-  if (!gradeStats) {
-    // Get summary stats with a more efficient query
-    const { data: summaryData } = await supabase
+  try {
+    // Try to use optimized stored procedure - much more efficient
+    const { data: gradeStats, error: procError } = await supabase.rpc('get_grade_stats', { 
+      user_id_param: userId 
+    }).maybeSingle();
+    
+    if (gradeStats) {
+      // Use the optimized procedure results
+      const typedGradeStats = gradeStats as unknown as GradeStats;
+      return (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Grade Overview</CardTitle>
+            <CardDescription>Your current academic performance</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {typedGradeStats.total_entries === 0 ? (
+              <div className="text-center text-muted-foreground">
+                <p>No grades available</p>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Average Grade</p>
+                    <div className={`text-3xl font-bold ${getGradeColor(typedGradeStats.average_grade)}`}>
+                      {typedGradeStats.average_grade.toFixed(2)}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Entries</p>
+                    <div className="text-3xl font-bold">{typedGradeStats.total_entries}</div>
+                  </div>
+                </div>
+                
+                {Object.keys(typedGradeStats.subject_averages || {}).length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium border-b pb-1 mb-2">Top Subjects</p>
+                    <div className="space-y-1">
+                      {Object.entries(typedGradeStats.subject_averages)
+                        .sort(([, a], [, b]) => b - a)
+                        .slice(0, 3)
+                        .map(([subject, average]) => (
+                          <div key={subject} className="flex justify-between items-center">
+                            <span className="font-medium truncate mr-2">{subject}</span>
+                            <span className={`font-semibold ${getGradeColor(average)}`}>
+                              {typeof average === 'number' ? average.toFixed(2) : average}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    // If stored procedure isn't available, use more efficient direct query
+    const { data: summaryData, error } = await supabase
       .from('grades')
       .select('subject, grade')
       .eq('user_id', userId)
-      .limit(50); // Limit for better performance
-      
-    if (summaryData && summaryData.length > 0) {
-      totalEntries = summaryData.length;
-      const sum = summaryData.reduce((acc: number, grade: GradeSummary) => acc + grade.grade, 0);
-      averageGrade = parseFloat((sum / summaryData.length).toFixed(2));
-      
-      // Calculate subject averages
-      const subjectTotals: Record<string, SubjectTotal> = {};
-      summaryData.forEach((grade: GradeSummary) => {
-        if (!subjectTotals[grade.subject]) {
-          subjectTotals[grade.subject] = { sum: 0, count: 0 };
-        }
-        subjectTotals[grade.subject].sum += grade.grade;
-        subjectTotals[grade.subject].count += 1;
-      });
-      
-      Object.entries(subjectTotals).forEach(([subject, data]) => {
-        subjectAverages[subject] = parseFloat((data.sum / data.count).toFixed(2));
-      });
+      .limit(50);
+    
+    if (error) {
+      console.error('Error fetching grades:', error);
+      return <GradeStatsError />;
     }
-  } else {
-    // Use the optimized procedure results
-    const typedGradeStats = gradeStats as unknown as GradeStats;
-    averageGrade = typedGradeStats.average_grade;
-    subjectAverages = typedGradeStats.subject_averages || {};
-    totalEntries = typedGradeStats.total_entries;
+    
+    if (!summaryData || summaryData.length === 0) {
+      return (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Grade Overview</CardTitle>
+            <CardDescription>Your current academic performance</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center text-muted-foreground">
+              <p>No grades available</p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+    
+    // Calculate metrics efficiently
+    const totalEntries = summaryData.length;
+    const sum = summaryData.reduce((acc: number, grade: GradeSummary) => acc + grade.grade, 0);
+    const averageGrade = parseFloat((sum / totalEntries).toFixed(2));
+    
+    // Calculate subject averages - do this once rather than repeatedly in render
+    const subjectTotals: Record<string, SubjectTotal> = {};
+    const subjectAverages: Record<string, number> = {};
+    
+    summaryData.forEach((grade: GradeSummary) => {
+      if (!subjectTotals[grade.subject]) {
+        subjectTotals[grade.subject] = { sum: 0, count: 0 };
+      }
+      subjectTotals[grade.subject].sum += grade.grade;
+      subjectTotals[grade.subject].count += 1;
+    });
+    
+    Object.entries(subjectTotals).forEach(([subject, data]) => {
+      subjectAverages[subject] = parseFloat((data.sum / data.count).toFixed(2));
+    });
+    
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle>Grade Overview</CardTitle>
+          <CardDescription>Your current academic performance</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Average Grade</p>
+              <div className={`text-3xl font-bold ${getGradeColor(averageGrade)}`}>
+                {averageGrade}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Entries</p>
+              <div className="text-3xl font-bold">{totalEntries}</div>
+            </div>
+          </div>
+          
+          {Object.keys(subjectAverages).length > 0 && (
+            <div>
+              <p className="text-sm font-medium border-b pb-1 mb-2">Top Subjects</p>
+              <div className="space-y-1">
+                {Object.entries(subjectAverages)
+                  .sort(([, a], [, b]) => b - a)
+                  .slice(0, 3)
+                  .map(([subject, average]) => (
+                    <div key={subject} className="flex justify-between items-center">
+                      <span className="font-medium truncate mr-2">{subject}</span>
+                      <span className={`font-semibold ${getGradeColor(average)}`}>
+                        {average}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  } catch (e) {
+    console.error('Error in GradeStats component:', e);
+    return <GradeStatsError />;
   }
+}
 
+// Simple error state component
+function GradeStatsError() {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -116,45 +228,9 @@ async function GradeStats({ userId }: { userId: string }) {
         <CardDescription>Your current academic performance</CardDescription>
       </CardHeader>
       <CardContent>
-        {totalEntries === 0 ? (
-          <div className="text-center text-muted-foreground">
-            <p>No grades available</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Average Grade</p>
-                <div className={`text-3xl font-bold ${averageGrade ? getGradeColor(averageGrade) : ""}`}>
-                  {averageGrade ?? "N/A"}
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Entries</p>
-                <div className="text-3xl font-bold">{totalEntries}</div>
-              </div>
-            </div>
-            
-            {Object.keys(subjectAverages).length > 0 && (
-              <div>
-                <p className="text-sm font-medium border-b pb-1 mb-2">Top Subjects</p>
-                <div className="space-y-1">
-                  {Object.entries(subjectAverages)
-                    .sort(([, a], [, b]) => b - a)
-                    .slice(0, 3)
-                    .map(([subject, average]) => (
-                      <div key={subject} className="flex justify-between items-center">
-                        <span className="font-medium truncate mr-2">{subject}</span>
-                        <span className={`font-semibold ${getGradeColor(average)}`}>
-                          {average}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+        <div className="text-center text-muted-foreground">
+          <p>Unable to load grades</p>
+        </div>
       </CardContent>
     </Card>
   );
