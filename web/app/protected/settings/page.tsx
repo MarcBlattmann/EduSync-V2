@@ -10,17 +10,20 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Shield, CheckCircle2, UserCircle, Palette } from "lucide-react";
+import { Lock, Shield, CheckCircle2, UserCircle, Palette, Upload, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
+  const [avatar, setAvatar] = useState("");
   const [activeTab, setActiveTab] = useState("profile");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -47,6 +50,7 @@ export default function Settings() {
         // Get user metadata if available
         if (user.user_metadata) {
           setFullName(user.user_metadata.full_name || "");
+          setAvatar(user.user_metadata.avatar_url || "");
         }
         
         setIsLoading(false);
@@ -158,6 +162,15 @@ export default function Settings() {
     },
   ];
 
+  // Calculate initials for avatar fallback
+  const initials = fullName
+    ? fullName
+        .split(' ')
+        .map(name => name[0])
+        .join('')
+        .toUpperCase()
+    : email.charAt(0).toUpperCase();
+
   return (
     <>
       <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
@@ -174,9 +187,12 @@ export default function Settings() {
           
           {!isLoading && (
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
-                {fullName ? fullName.charAt(0).toUpperCase() : email.charAt(0).toUpperCase()}
-              </div>
+              <Avatar className="h-8 w-8">
+                {avatar ? (
+                  <AvatarImage src={avatar} alt={fullName || email} />
+                ) : null}
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
               <div className="text-sm">
                 <div className="font-medium">{fullName || 'User'}</div>
                 <div className="text-muted-foreground text-xs">{email}</div>
@@ -233,11 +249,11 @@ export default function Settings() {
                       <CardTitle>Profile Information</CardTitle>
                     </div>
                     <CardDescription>
-                      Update your personal information and how others see you in the system
+                      Update your personal information
                     </CardDescription>
                   </CardHeader>
                   
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-6">
                     {isLoading ? (
                       <div className="space-y-4">
                         <Skeleton className="h-4 w-32" />
