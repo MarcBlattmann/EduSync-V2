@@ -27,10 +27,17 @@ interface GradeSummary {
   grade: number;
 }
 
-// Define subject totals type
+// Define subject total interface
 interface SubjectTotal {
   sum: number;
   count: number;
+}
+
+// Define grade stats returned from stored procedure
+interface GradeStats {
+  average_grade: number;
+  subject_averages: Record<string, number>;
+  total_entries: number;
 }
 
 // Define calendar event type
@@ -96,9 +103,10 @@ async function GradeStats({ userId }: { userId: string }) {
     }
   } else {
     // Use the optimized procedure results
-    averageGrade = gradeStats.average_grade;
-    subjectAverages = gradeStats.subject_averages || {};
-    totalEntries = gradeStats.total_entries;
+    const typedGradeStats = gradeStats as unknown as GradeStats;
+    averageGrade = typedGradeStats.average_grade;
+    subjectAverages = typedGradeStats.subject_averages || {};
+    totalEntries = typedGradeStats.total_entries;
   }
 
   return (
