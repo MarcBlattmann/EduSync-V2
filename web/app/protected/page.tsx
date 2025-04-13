@@ -21,6 +21,18 @@ interface Grade {
   created_at: string;
 }
 
+// Define summary grade data type
+interface GradeSummary {
+  subject: string;
+  grade: number;
+}
+
+// Define subject totals type
+interface SubjectTotal {
+  sum: number;
+  count: number;
+}
+
 // Define calendar event type
 interface CalendarEvent {
   id: string;
@@ -50,8 +62,8 @@ async function GradeStats({ userId }: { userId: string }) {
     user_id_param: userId 
   }).single();
   
-  let averageGrade = null;
-  let subjectAverages = {};
+  let averageGrade: number | null = null;
+  let subjectAverages: Record<string, number> = {};
   let totalEntries = 0;
   
   // If stored procedure isn't available, fall back to simplified query
@@ -65,12 +77,12 @@ async function GradeStats({ userId }: { userId: string }) {
       
     if (summaryData && summaryData.length > 0) {
       totalEntries = summaryData.length;
-      const sum = summaryData.reduce((acc, grade) => acc + grade.grade, 0);
+      const sum = summaryData.reduce((acc: number, grade: GradeSummary) => acc + grade.grade, 0);
       averageGrade = parseFloat((sum / summaryData.length).toFixed(2));
       
       // Calculate subject averages
-      const subjectTotals = {};
-      summaryData.forEach(grade => {
+      const subjectTotals: Record<string, SubjectTotal> = {};
+      summaryData.forEach((grade: GradeSummary) => {
         if (!subjectTotals[grade.subject]) {
           subjectTotals[grade.subject] = { sum: 0, count: 0 };
         }
