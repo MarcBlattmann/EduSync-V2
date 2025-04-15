@@ -48,7 +48,7 @@ interface CalendarEvent {
   end_date: string;
   color: string;
   created_at: string;
-  user_id: string;
+  user_id?: string; // Make user_id optional to match the returned data structure
 }
 
 // Helper function for text color based on grade
