@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
-type RouteContext = {
-  params: {
-    code: string;
-  };
-};
-
 export async function GET(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { code: string } }
 ) {
-  const code = context.params.code;
+  const code = params.code;
   const supabase = await createClient();
   
   try {
