@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
-export async function GET(
-  request: Request,
-  context: { params: { code: string } }
-) {
-  const code = context.params.code;
+export async function GET(request: Request) {
+  // Extract the code param from the URL
+  const url = new URL(request.url);
+  const segments = url.pathname.split('/');
+  const code = segments[segments.length - 1];
   const supabase = await createClient();
   
   try {
