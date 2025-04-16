@@ -10,7 +10,8 @@ import {
   Pencil, 
   ChevronLeft, 
   ChevronRight,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Share2
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { AddEventDialog } from "@/components/add-event-dialog";
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { ShareCalendarDialog } from "@/components/share-calendar-dialog";
 
 interface CalendarEvent {
   id: string;
@@ -54,6 +56,7 @@ export default function Calendar() {
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
@@ -221,7 +224,6 @@ export default function Calendar() {
 
   // Get days in month array (including padding days from prev/next month)
   const getDaysInMonth = () => {
-    // ...existing code...
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     
@@ -333,6 +335,10 @@ export default function Calendar() {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={goToToday}>Today</Button>
+              <Button variant="outline" size="sm" onClick={() => setShareDialogOpen(true)} className="flex gap-1">
+                <Share2 size={16} />
+                <span className="hidden sm:inline">Share</span>
+              </Button>
               <Button size="sm" onClick={() => {
                 setEditingEvent(null); // Reset editing state first
                 setDialogOpen(true);
@@ -550,7 +556,7 @@ export default function Calendar() {
         open={dialogOpen} 
         onOpenChange={setDialogOpen}
         onAddEvent={handleAddEvent}
-        onDeleteEvent={handleDeleteClick} // Add this prop to pass the delete function
+        onDeleteEvent={handleDeleteClick}
         eventDate={selectedDate}
         editingEvent={editingEvent}
         isEditing={!!editingEvent}
@@ -565,6 +571,12 @@ export default function Calendar() {
         onAddEvent={handleAddEventForDate}
         onEditEvent={handleEditClick}
         onDeleteEvent={handleDeleteClick}
+      />
+      
+      {/* Share Calendar Dialog */}
+      <ShareCalendarDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
       />
       
       {/* Delete Confirmation Dialog */}
