@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
+interface RouteParams {
+  params: {
+    code: string;
+  };
+}
+
 // GET - Access a shared calendar by share code
 export async function GET(
   request: NextRequest,
-  context: { params: { code: string } }
+  { params }: RouteParams
 ) {
-  const { code } = context.params;
+  const code = params.code;
   const supabase = await createClient();
   
   try {
