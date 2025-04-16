@@ -52,11 +52,25 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
     direction: "desc",
   });
 
-  // Helper function for text color based on grade
+  // Helper function for text color based on grade system
+  const getGradeSystem = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gradeSystem') || '6best';
+    }
+    return '6best';
+  };
+
   const getGradeColor = (grade: number): string => {
-    if (grade >= 5) return "text-green-600 dark:text-green-400";
-    if (grade >= 4) return "text-orange-500 dark:text-orange-300";
-    return "text-red-600 dark:text-red-400";
+    const system = getGradeSystem();
+    if (system === '1best') {
+      if (grade <= 2) return "text-green-600 dark:text-green-400";
+      if (grade <= 4) return "text-orange-500 dark:text-orange-300";
+      return "text-red-600 dark:text-red-400";
+    } else {
+      if (grade >= 5) return "text-green-600 dark:text-green-400";
+      if (grade >= 4) return "text-orange-500 dark:text-orange-300";
+      return "text-red-600 dark:text-red-400";
+    }
   };
 
   // Handle sorting

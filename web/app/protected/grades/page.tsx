@@ -240,10 +240,49 @@ export default function Grades() {
     return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
   };
 
+  // Helper for grade system
+  const getGradeSystem = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gradeSystem') || '6best';
+    }
+    return '6best';
+  };
+
+  // Grade system state, so chart updates on change
+  const [gradeSystem, setGradeSystem] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gradeSystem') || '6best';
+    }
+    return '6best';
+  });
+
+  // Listen for changes in localStorage (settings page)
+  useEffect(() => {
+    const handleStorage = () => {
+      const system = localStorage.getItem('gradeSystem') || '6best';
+      setGradeSystem(system);
+    };
+    window.addEventListener('storage', handleStorage);
+    // Also update on focus (user might have changed settings in another tab)
+    window.addEventListener('focus', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', handleStorage);
+    };
+  }, []);
+
+  // Color for subject averages, adapts to grade system
   const getAverageGradeTextColor = (grade: number) => {
-    if (grade >= 5) return "text-green-600 dark:text-green-400";
-    if (grade >= 4) return "text-orange-500 dark:text-orange-300";
-    return "text-red-600 dark:text-red-400";
+    const system = getGradeSystem();
+    if (system === '1best') {
+      if (grade <= 2) return "text-green-600 dark:text-green-400";
+      if (grade <= 4) return "text-orange-500 dark:text-orange-300";
+      return "text-red-600 dark:text-red-400";
+    } else {
+      if (grade >= 5) return "text-green-600 dark:text-green-400";
+      if (grade >= 4) return "text-orange-500 dark:text-orange-300";
+      return "text-red-600 dark:text-red-400";
+    }
   };
   
   return (
@@ -325,7 +364,11 @@ export default function Grades() {
                     <LineChart data={prepareChartData()}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                       <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                      <YAxis domain={[1, 6]} tick={{ fontSize: 12 }} />
+                      <YAxis
+                        domain={gradeSystem === '1best' ? [1, 6] : [1, 6]}
+                        reversed={gradeSystem === '1best'}
+                        tick={{ fontSize: 12 }}
+                      />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--card))',

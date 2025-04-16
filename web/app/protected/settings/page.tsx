@@ -30,7 +30,13 @@ export default function Settings() {
   const [passwordCurrent, setPasswordCurrent] = useState("");
   const [passwordNew, setPasswordNew] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  
+  const [gradeSystem, setGradeSystem] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gradeSystem') || '6best';
+    }
+    return '6best';
+  });
+
   const router = useRouter();
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
@@ -140,6 +146,17 @@ export default function Settings() {
     }, 3000);
   };
 
+  // Save grade system to localStorage and (optionally) user metadata
+  const handleGradeSystemChange = async (newSystem: string) => {
+    setGradeSystem(newSystem);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gradeSystem', newSystem);
+    }
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+    // Optionally: Save to Supabase user metadata here
+  };
+
   // Navigation items for settings
   const navigationItems = [
     { 
@@ -159,6 +176,12 @@ export default function Settings() {
       label: "Appearance", 
       icon: <Palette className="h-4 w-4 mr-2" />,
       description: "Customize how EduSync looks" 
+    },
+    { 
+      id: "system", 
+      label: "System", 
+      icon: <Shield className="h-4 w-4 mr-2" />, 
+      description: "General preferences like grade system" 
     },
   ];
 
@@ -413,7 +436,6 @@ export default function Settings() {
                       Customize the application appearance
                     </CardDescription>
                   </CardHeader>
-                  
                   <CardContent className="space-y-6">
                     <div>
                       <h4 className="font-medium mb-3">Select Theme</h4>
@@ -454,12 +476,66 @@ export default function Settings() {
                       <p className="text-xs text-muted-foreground mt-2">System setting will follow your device's theme preference.</p>
                     </div>
                   </CardContent>
-                  
                   <CardFooter className="border-t px-6 py-4">
                     {saveSuccess && activeTab === "appearance" && (
                       <div className="flex items-center text-green-600 dark:text-green-400">
                         <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                        <span className="text-sm">Theme preferences saved</span>
+                        <span className="text-sm">Preferences saved</span>
+                      </div>
+                    )}
+                  </CardFooter>
+                </Card>
+              </div>
+            )}
+            
+            {/* System Settings */}
+            {activeTab === "system" && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-primary" />
+                      <CardTitle>System Preferences</CardTitle>
+                    </div>
+                    <CardDescription>
+                      Set your preferred grading system
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <h4 className="font-medium mb-3">Grade System</h4>
+                      <div className="grid grid-cols-2 gap-3 max-w-xs">
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                            gradeSystem === '6best' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleGradeSystemChange('6best')}
+                          type="button"
+                        >
+                          <span className="text-lg font-bold">6</span>
+                          <span className="text-xs">6 is best</span>
+                        </button>
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                            gradeSystem === '1best' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleGradeSystemChange('1best')}
+                          type="button"
+                        >
+                          <span className="text-lg font-bold">1</span>
+                          <span className="text-xs">1 is best</span>
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">Choose which grade is considered the best for your system.</p>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t px-6 py-4">
+                    {saveSuccess && activeTab === "system" && (
+                      <div className="flex items-center text-green-600 dark:text-green-400">
+                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                        <span className="text-sm">Preferences saved</span>
                       </div>
                     )}
                   </CardFooter>

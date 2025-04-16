@@ -57,7 +57,26 @@ export function AddGradeDialog({
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
   const [showCustomSubject, setShowCustomSubject] = useState(false);
-  
+
+  // Get grade system from localStorage
+  const getGradeSystem = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gradeSystem') || '6best';
+    }
+    return '6best';
+  };
+
+  // Get min/max for grade input based on system
+  const getGradeRange = () => {
+    const system = getGradeSystem();
+    if (system === '1best') {
+      return { min: 1, max: 6, label: 'Grade (1-6, 1 is best)' };
+    } else {
+      return { min: 1, max: 6, label: 'Grade (1-6, 6 is best)' };
+    }
+  };
+  const { min, max, label } = getGradeRange();
+
   // Initialize form with editing grade data when available
   useEffect(() => {
     if (editingGrade) {
@@ -83,31 +102,31 @@ export function AddGradeDialog({
       setShowCustomSubject(false);
     }
   }, [editingGrade, existingSubjects, open]);
-  
+
   const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setGradeInput(value); // Always update the string value for the input
-    
+
     // Only update the numeric value if it's valid
     const parsedValue = parseFloat(value);
     if (!isNaN(parsedValue)) {
       setGrade(parsedValue);
     }
   };
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate grade is between 1 and 6
-    const validatedGrade = Math.min(Math.max(grade, 1), 6);
-    
+
+    // Validate grade is between min and max
+    const validatedGrade = Math.min(Math.max(grade, min), max);
+
     onAddGrade({
       subject: showCustomSubject ? customSubject : subject,
       grade: validatedGrade,
       date,
       description,
     });
-    
+
     // Reset form
     setSubject("");
     setCustomSubject("");
@@ -183,12 +202,12 @@ export function AddGradeDialog({
               )}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="grade">Grade (1-6)</Label>
+              <Label htmlFor="grade">{label}</Label>
               <Input
                 id="grade"
                 type="number"
-                min="1"
-                max="6"
+                min={min}
+                max={max}
                 step="0.1"
                 value={gradeInput} // Use the string value for the input
                 onChange={handleGradeChange}
