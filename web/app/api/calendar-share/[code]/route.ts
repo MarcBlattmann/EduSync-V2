@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
+// Define the correct type for route parameters in Next.js 15
+interface RouteContext {
+  params: {
+    code: string;
+  };
+}
+
 // GET - Access a shared calendar by share code
 export async function GET(
   request: NextRequest,
-  context: { params: { code: string } }
+  { params }: RouteContext
 ) {
-  const { code } = context.params;
+  const { code } = params;
   const supabase = await createClient();
   
   try {
