@@ -4,9 +4,9 @@ import { createClient } from '@/utils/supabase/server';
 // GET - Access a shared calendar by share code
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  context: { params: { code: string } }
 ) {
-  const { code } = params;
+  const { code } = context.params;
   const supabase = await createClient();
   
   try {
