@@ -11,8 +11,8 @@ export default async function Home() {
       <NavBar/>
       <main className="flex-1 flex flex-col w-full">
         {/* Hero Section */}
-        <section className="w-full min-h-[calc(100vh-64px)] flex items-center justify-center">
-          <div className="container px-4 md:px-6">
+        <section className="w-full mt-10 mb-5 min-h-[calc(100vh-256px)] flex items-center justify-center">
+          <div className="container px-4 md:px-6 flex">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
