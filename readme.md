@@ -1,4 +1,4 @@
-# EduSync
+# EduSync 
 
 **EduSync** is a simple and clean web app that helps students stay organized throughout the school year.  
 
