@@ -1,15 +1,16 @@
-# EduSync 
+# EduSync
 
-**EduSync** is a simple and clean web app that helps students stay organized throughout the school year.  
+EduSync is a user-friendly web app that helps students stay organized throughout the school year.
 
-It currently includes a grade tracker and a calendar to keep track of school events, tests, and assignments.
+## 📚 Current Features
 
-## Live Site
+### Grade Tracking
+- Keep an eye on your academic performance and track your progress.
 
-Visit: [https://edusync.info](https://edusync.info)
+### Calendar
+- Plan and manage school events, exams, and assignments effectively.
 
-## Future Plans
+## 🌐 Live Site
+Visit the website: [EduSync](#)
 
-- Assignment reminders  
-- Course-specific notes  
-- Smart suggestions for organizing tasks  
+Stay organized and make the most of your school year with EduSync!
