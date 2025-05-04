@@ -171,7 +171,7 @@ export default async function Home() {
                         const day = i + 1;
                         const isToday = day === 4;
                         const hasEvent = [4, 7, 12, 18, 25, 29].includes(day);
-                        const eventColors = {
+                        const eventColors: Record<number, string> = {
                           4: 'bg-primary/20 border-primary/30',
                           7: 'bg-green-500/20 border-green-500/30',
                           12: 'bg-blue-500/20 border-blue-500/30',
@@ -180,13 +180,16 @@ export default async function Home() {
                           29: 'bg-red-500/20 border-red-500/30',
                         };
                         
+                        // Get event color safely with fallback to empty string if day is not a key
+                        const eventColor = hasEvent ? (eventColors[day] || '') : '';
+                        
                         return (
                           <div 
                             key={`feature-calendar-day-${day}`} 
                             className={`
                               relative p-2 rounded-md flex flex-col items-center justify-center text-sm
                               ${isToday ? 'bg-primary text-primary-foreground font-bold' : ''}
-                              ${hasEvent && !isToday ? `font-medium border ${eventColors[day]}` : ''}
+                              ${hasEvent && !isToday ? `font-medium border ${eventColor}` : ''}
                             `}
                           >
                             {day}
