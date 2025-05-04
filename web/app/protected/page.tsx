@@ -8,6 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UpcomingEvents } from "@/components/upcoming-events";
 import { Suspense, useEffect, useState } from "react";
+import { CalendarIcon, GraduationCapIcon } from "lucide-react";
+import Link from "next/link";
 
 // Define types for the grade data
 interface Grade {
@@ -117,16 +119,21 @@ function GradeStats({ userId }: { userId: string }) {
   // If we have grade stats from stored procedure
   if (gradeStats) {
     return (
-      <Card>
+      <Card className="flex flex-col">
         <CardHeader className="pb-2">
           <CardTitle>Grade Overview</CardTitle>
           <CardDescription>Your current academic performance</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-grow flex flex-col pb-6">
           {gradeStats.total_entries === 0 ? (
-            <div className="text-center text-muted-foreground">
-              <p>No grades available</p>
-            </div>
+            <Link href="/protected/grades" className="flex-1 flex flex-col h-full">
+              <div className="flex-grow flex flex-col items-center justify-center text-center py-6 text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-full">
+                <div className="flex flex-col items-center">
+                  <GraduationCapIcon className="w-10 h-10 mb-2 opacity-30" />
+                  <p>No grades available</p>
+                </div>
+              </div>
+            </Link>
           ) : (
             <>
               <div className="flex justify-between items-center mb-4">
@@ -170,15 +177,20 @@ function GradeStats({ userId }: { userId: string }) {
   // Handle direct query results if no stored procedure
   if (summaryData.length === 0) {
     return (
-      <Card>
+      <Card className="flex flex-col">
         <CardHeader className="pb-2">
           <CardTitle>Grade Overview</CardTitle>
           <CardDescription>Your current academic performance</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="text-center text-muted-foreground">
-            <p>No grades available</p>
-          </div>
+        <CardContent className="flex-grow flex flex-col pb-6">
+          <Link href="/protected/grades" className="flex-1 flex flex-col h-full">
+            <div className="flex-grow flex flex-col items-center justify-center text-center py-6 text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-full">
+              <div className="flex flex-col items-center">
+                <GraduationCapIcon className="w-10 h-10 mb-2 opacity-30" />
+                <p>No grades available</p>
+              </div>
+            </div>
+          </Link>
         </CardContent>
       </Card>
     );
@@ -206,12 +218,12 @@ function GradeStats({ userId }: { userId: string }) {
   });
   
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle>Grade Overview</CardTitle>
         <CardDescription>Your current academic performance</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow flex flex-col pb-6">
         <div className="flex justify-between items-center mb-4">
           <div>
             <p className="text-sm text-muted-foreground">Average Grade</p>
@@ -315,12 +327,12 @@ function UpcomingEventsCard({ userId }: { userId: string }) {
 // Loading fallback components
 function GradeStatsLoading() {
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle>Grade Overview</CardTitle>
         <CardDescription>Your current academic performance</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow flex flex-col pb-6">
         <div className="animate-pulse">
           <div className="flex justify-between items-center mb-4">
             <div>

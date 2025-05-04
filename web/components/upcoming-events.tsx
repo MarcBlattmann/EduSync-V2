@@ -81,18 +81,14 @@ function UpcomingEventsBase({ events }: { events: CalendarEvent[] }) {
   return (
     <div className="flex flex-col h-full">
       {sortedEvents.length === 0 ? (
-        <div className="flex-1 flex flex-col">
-          <div className="flex-grow flex flex-col items-center justify-center text-center py-6 text-muted-foreground">
-            <CalendarIcon className="w-10 h-10 mx-auto mb-2 opacity-30" />
-            <p>No upcoming events</p>
+        <Link href="/protected/calendar" className="flex-1 flex flex-col">
+          <div className="flex-grow flex flex-col items-center justify-center text-center py-6 text-muted-foreground hover:text-foreground transition-colors cursor-pointer h-full">
+            <div className="flex flex-col items-center">
+              <CalendarIcon className="w-10 h-10 mb-2 opacity-30" />
+              <p>No upcoming events</p>
+            </div>
           </div>
-          <Button variant="outline" size="sm" className="w-full mt-auto" asChild>
-            <Link href="/protected/calendar" className="flex justify-center items-center">
-              Add your first event
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
+        </Link>
       ) : (
         <div className="flex flex-col h-full">
           <div className="flex-grow space-y-2.5 overflow-auto mb-4">
