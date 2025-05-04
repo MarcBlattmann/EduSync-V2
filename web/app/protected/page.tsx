@@ -263,13 +263,13 @@ function GradeStats({ userId }: { userId: string }) {
 // Simple error state component
 function GradeStatsError() {
   return (
-    <Card>
+    <Card className="flex flex-col">
       <CardHeader className="pb-2">
         <CardTitle>Grade Overview</CardTitle>
         <CardDescription>Your current academic performance</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="text-center text-muted-foreground">
+      <CardContent className="flex-grow flex flex-col pb-6">
+        <div className="flex-grow flex flex-col items-center justify-center text-center py-6 text-muted-foreground h-full">
           <p>Unable to load grades</p>
         </div>
       </CardContent>
