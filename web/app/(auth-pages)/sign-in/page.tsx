@@ -15,7 +15,7 @@ export default async function Login(props: { searchParams: Promise<Message> }) {
         <h1 className="text-2xl font-medium mb-2">Sign in</h1>
         <p className="text-sm text-foreground mb-6">
           Don't have an account?{" "}
-          <Link className="text-foreground font-medium underline" href="/sign-up">
+          <Link className="text-primary font-medium underline" href="/sign-up">
             Sign up
           </Link>
         </p>
@@ -23,10 +23,10 @@ export default async function Login(props: { searchParams: Promise<Message> }) {
         <div className="flex flex-col gap-3">
           <GoogleSignInButton />
           
-          <div className="my-4">
-            <Separator>
-              <span className="mx-2 text-xs text-muted-foreground">OR</span>
-            </Separator>
+          <div className="flex items-center my-3">
+            <Separator className="w-16 flex-grow-0" />
+            <span className="px-3 text-xs text-muted-foreground mx-auto">OR</span>
+            <Separator className="w-16 flex-grow-0" />
           </div>
           
           <Label htmlFor="email">Email</Label>
