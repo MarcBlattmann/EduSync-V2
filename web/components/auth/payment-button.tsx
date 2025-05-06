@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 interface PaymentButtonProps {
@@ -16,9 +15,13 @@ export const PaymentButton = ({
   className,
 }: PaymentButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const handlePayment = async () => {
+    if (!email || !password) {
+      console.error("Email and password are required");
+      return;
+    }
+    
     try {
       setIsLoading(true);
       
@@ -29,6 +32,11 @@ export const PaymentButton = ({
         },
         body: JSON.stringify({ email, password }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to initialize payment");
+      }
 
       const data = await response.json();
       
@@ -49,7 +57,8 @@ export const PaymentButton = ({
     <Button
       onClick={handlePayment}
       className={className}
-      disabled={isLoading}
+      disabled={isLoading || !email || !password}
+      type="button"
     >
       {isLoading ? "Processing..." : "Proceed to payment"}
     </Button>
