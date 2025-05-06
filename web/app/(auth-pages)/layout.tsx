@@ -9,7 +9,7 @@ export default async function Layout({
   return (
     <>
       <NavBar/>
-      <div className="h-full flex items-center">{children}</div>
+      <div className="h-[calc(100vh-11.1rem)] flex items-center">{children}</div>
       <Footer/>
     </>
   );

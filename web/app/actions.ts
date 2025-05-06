@@ -8,7 +8,6 @@ import { redirect } from "next/navigation";
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
-  const supabase = await createClient();
   const origin = (await headers()).get("origin");
 
   if (!email || !password) {
@@ -19,24 +18,8 @@ export const signUpAction = async (formData: FormData) => {
     );
   }
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${origin}/auth/callback`,
-    },
-  });
-
-  if (error) {
-    console.error(error.code + " " + error.message);
-    return encodedRedirect("error", "/sign-up", error.message);
-  } else {
-    return encodedRedirect(
-      "success",
-      "/sign-up",
-      "Thanks for signing up! Please check your email for a verification link.",
-    );
-  }
+  // Instead of creating the user directly, redirect to the payment endpoint
+  return redirect(`/api/payment/registration?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
 };
 
 export const signInAction = async (formData: FormData) => {
@@ -44,15 +27,33 @@ export const signInAction = async (formData: FormData) => {
   const password = formData.get("password") as string;
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  // First attempt to authenticate the user
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (error) {
-    return encodedRedirect("error", "/sign-in", error.message);
+  if (authError) {
+    return encodedRedirect("error", "/sign-in", authError.message);
   }
 
+  // User is authenticated, now check if they've made a payment
+  const { data: userData } = await supabase.from('payments')
+    .select('*')
+    .eq('email', email)
+    .eq('status', 'succeeded')
+    .maybeSingle();
+
+  // If there's no payment record, redirect to payment
+  if (!userData) {
+    // Sign them out since we want to require payment first
+    await supabase.auth.signOut();
+    
+    // Redirect to payment registration with their email
+    return redirect(`/api/payment/registration?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+  }
+
+  // User has already paid, proceed to the protected area
   return redirect("/protected");
 };
 
