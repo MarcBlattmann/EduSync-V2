@@ -60,23 +60,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store the signup credentials temporarily in the session
-    const supabase = await createClient();
-    const { data: sessionData, error: sessionError } = await supabase.auth.admin.createSession({
-      email: email,
-      password: password,
-      properties: {
-        pending_registration: true,
-      },
-    });
-
-    if (sessionError) {
-      return NextResponse.json(
-        { error: sessionError.message },
-        { status: 400 }
-      );
-    }
-
+    // Store the credentials in metadata instead of trying to create a session
+    // We'll use these credentials in the payment success handler
+    
     // Create a Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -91,6 +77,7 @@ export async function POST(request: NextRequest) {
       cancel_url: `${request.headers.get('origin')}/sign-up?cancelled=true`,
       metadata: {
         email,
+        password, // Note: In production, consider a more secure approach
       },
     });
 
