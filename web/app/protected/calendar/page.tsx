@@ -16,6 +16,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { AddEventDialog } from "@/components/add-event-dialog";
 import { DayEventsDialog } from "@/components/day-events-dialog";
+import { EventPreviewDialog } from "@/components/event-preview-dialog";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -63,6 +64,8 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isMobileView, setIsMobileView] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewEvent, setPreviewEvent] = useState<CalendarEvent | null>(null);
   
   const supabase = createClient();
 
@@ -197,6 +200,11 @@ export default function Calendar() {
   const handleEditClick = (event: CalendarEvent) => {
     setEditingEvent(event);
     setDialogOpen(true);
+  };
+
+  const handleEventClick = (event: CalendarEvent) => {
+    setPreviewEvent(event);
+    setPreviewDialogOpen(true);
   };
 
   const handleDayClick = (date: Date) => {
@@ -416,8 +424,7 @@ export default function Calendar() {
                             )}
                           </div>
                           
-                          <div className="space-y-1 mt-0.5 sm:mt-1 max-h-[40px] sm:max-h-[60px] overflow-y-auto">
-                            {dayEvents.slice(0, 2).map((event) => (
+                          <div className="space-y-1 mt-0.5 sm:mt-1 max-h-[40px] sm:max-h-[60px] overflow-y-auto">                            {dayEvents.slice(0, 2).map((event) => (
                               <div 
                                 key={event.id}
                                 className={cn(
@@ -427,13 +434,8 @@ export default function Calendar() {
                                 onClick={(e) => {
                                   e.stopPropagation(); // Stop event bubbling
                                   
-                                  // On mobile, always open day view instead of edit dialog
-                                  if (isMobileView) {
-                                    handleDayClick(dayInfo.date);
-                                  } else {
-                                    // On desktop, keep existing behavior (edit event)
-                                    handleEditClick(event);
-                                  }
+                                  // Show preview for the event
+                                  handleEventClick(event);
                                 }}
                               >
                                 {event.title}
@@ -478,11 +480,10 @@ export default function Calendar() {
                   .map(event => {
                     const start = new Date(event.start_date);
                     
-                    return (
-                      <div 
+                    return (                      <div 
                         key={event.id} 
                         className="border p-2 sm:p-3 rounded-md bg-card hover:bg-accent/50 cursor-pointer transition-colors"
-                        onClick={() => handleEditClick(event)}
+                        onClick={() => handleEventClick(event)}
                       >
                         <div className="flex justify-between">
                           <h4 className="font-medium text-sm sm:text-base">{event.title}</h4>
@@ -572,11 +573,19 @@ export default function Calendar() {
         onEditEvent={handleEditClick}
         onDeleteEvent={handleDeleteClick}
       />
-      
-      {/* Share Calendar Dialog */}
+        {/* Share Calendar Dialog */}
       <ShareCalendarDialog
         open={shareDialogOpen}
         onOpenChange={setShareDialogOpen}
+      />
+      
+      {/* Event Preview Dialog */}
+      <EventPreviewDialog
+        open={previewDialogOpen}
+        onOpenChange={setPreviewDialogOpen}
+        event={previewEvent}
+        onEditEvent={handleEditClick}
+        onDeleteEvent={handleDeleteClick}
       />
       
       {/* Delete Confirmation Dialog */}

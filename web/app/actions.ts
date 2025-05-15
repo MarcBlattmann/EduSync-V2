@@ -18,8 +18,24 @@ export const signUpAction = async (formData: FormData) => {
     );
   }
 
-  // Instead of creating the user directly, redirect to the payment endpoint
-  return redirect(`/api/payment/registration?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback`,
+    },
+  });
+
+  if (error) {
+    return encodedRedirect("error", "/sign-up", error.message);
+  }
+
+  return encodedRedirect(
+    "success",
+    "/sign-up",
+    "Check your email for the confirmation link"
+  );
 };
 
 export const signInAction = async (formData: FormData) => {
@@ -27,8 +43,8 @@ export const signInAction = async (formData: FormData) => {
   const password = formData.get("password") as string;
   const supabase = await createClient();
 
-  // First attempt to authenticate the user
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+  // Authenticate the user
+  const { error: authError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -37,23 +53,7 @@ export const signInAction = async (formData: FormData) => {
     return encodedRedirect("error", "/sign-in", authError.message);
   }
 
-  // User is authenticated, now check if they've made a payment
-  const { data: userData } = await supabase.from('payments')
-    .select('*')
-    .eq('email', email)
-    .eq('status', 'succeeded')
-    .maybeSingle();
-
-  // If there's no payment record, redirect to payment
-  if (!userData) {
-    // Sign them out since we want to require payment first
-    await supabase.auth.signOut();
-    
-    // Redirect to payment registration with their email
-    return redirect(`/api/payment/registration?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
-  }
-
-  // User has already paid, proceed to the protected area
+  // User is authenticated, proceed to the protected area
   return redirect("/protected");
 };
 

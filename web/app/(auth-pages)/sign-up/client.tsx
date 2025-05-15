@@ -5,10 +5,11 @@ import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { PaymentButton } from "@/components/auth/payment-button";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { SubmitButton } from "@/components/submit-button";
+import { signUpAction } from "@/app/actions";
 
 export default function SignupClient() {
   const searchParams = useSearchParams();
@@ -34,17 +35,12 @@ export default function SignupClient() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      // Form is valid, payment button will handle the rest
-    }
+    validateForm();
+    // Form will be submitted by SubmitButton
   };
-
   const message = searchParams.get('message');
-  const cancelled = searchParams.has('cancelled');
-  const success = searchParams.has('success');
   const error = searchParams.get('error');
 
   if (message) {
@@ -98,26 +94,14 @@ export default function SignupClient() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             suppressHydrationWarning
-          />
-          {errors.password && <p className="text-destructive text-sm mt-1">{errors.password}</p>}
-          
-          <PaymentButton 
-            email={email}
-            password={password}
+          />          {errors.password && <p className="text-destructive text-sm mt-1">{errors.password}</p>}
+            <SubmitButton 
+            pendingText="Signing up..." 
+            formAction={signUpAction}
             className="w-full"
-          />
-          
-          {cancelled && (
-            <div className="mt-4 p-2 border border-orange-200 bg-orange-50 rounded text-sm text-orange-800">
-              Payment was cancelled. You can try again when you're ready.
-            </div>
-          )}
-          
-          {success && (
-            <div className="mt-4 p-2 border border-green-200 bg-green-50 rounded text-sm text-green-800">
-              Payment successful! Please check your email to complete registration.
-            </div>
-          )}
+          >
+            Sign up
+          </SubmitButton>
           
           {error && (
             <div className="mt-4 p-2 border border-red-200 bg-red-50 rounded text-sm text-red-800">
