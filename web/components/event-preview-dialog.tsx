@@ -89,11 +89,10 @@ export function EventPreviewDialog({
               </p>
             </div>
           </div>
-          
-          {event.description && (
+            {event.description && (
             <div className="pt-2">
               <h4 className="text-sm font-medium mb-2">Description</h4>
-              <div className="text-sm bg-muted/50 p-3 rounded-md whitespace-pre-wrap">
+              <div className="text-sm bg-muted/50 p-3 rounded-md whitespace-pre-wrap max-h-[200px] overflow-y-auto">
                 {event.description}
               </div>
             </div>
