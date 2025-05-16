@@ -1,4 +1,5 @@
 "use client";
+import React from 'react';
 import { Note } from "./types";
 
 // Type guard function to check if an object is a Note
