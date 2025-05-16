@@ -343,7 +343,8 @@ function NotesContent() {
       // Log the content after it has been saved
       console.log("Note content after saving:", contentToSave);
     }
-  };  // Get filtered notes for the current folder or search results
+  };  // Get filtered notes for the current folder
+  // This only shows notes when a folder is selected AND a note is clicked
   const getFilteredNotes = (): Note[] => {
     let filteredNotes: Note[] = notes;
     
@@ -452,13 +453,16 @@ function NotesContent() {
                   ) : (
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   )}
-                </button>
-                <div                  className="flex items-center gap-2 flex-1 p-1 pl-2"
+                </button>                <div                  className="flex items-center gap-2 flex-1 p-1 pl-2"
                   onClick={() => {
                     setSelectedFolder(folder.id);
                     // Clear any search query when selecting a folder
                     if (searchQuery) {
                       setSearchQuery('');
+                    }
+                    // Clear selected note when selecting a folder
+                    if (selectedNote) {
+                      setSelectedNote(null);
                     }
                     // For mobile, automatically expand the folder when selected
                     if (!expandedFolders[folder.id]) {
@@ -867,67 +871,45 @@ function NotesContent() {
                   )}
                 </div>
               </div>            ) : (              // Notes list view
-              <div className="h-full p-3 overflow-auto">
+              <div className="h-full p-3 overflow-auto flex items-center justify-center">
                 {isLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[1, 2, 3, 4].map(i => (
                       <Skeleton key={i} className="h-32 w-full" />
                     ))}
-                  </div>                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">                    {getFilteredNotes().map((note: any) => {
-                      // Use type assertion to ensure type safety
-                      const typedNote: Note = note as Note;
-                      return (
-                      <Card 
-                        key={typedNote.id}                        className={cn(                          "p-3 md:p-4 cursor-pointer note-item note-list-item", 
-                          selectedNote !== null && getNoteId(selectedNote) === typedNote.id ? "active" : ""                        )}                        onClick={() => {
-                          console.log("Selected note content:", typedNote.content);
-                          setSelectedNote(typedNote);
-                          setNoteContent(typedNote.content);
-                          setEditMode(false);
-                        }}
-                      >
-                        <div className="flex justify-between items-start">
-                          <h4 className="font-medium truncate pr-2">{typedNote.title}</h4>                          <div className="flex gap-1 flex-shrink-0">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"                              onClick={(e: React.MouseEvent) => {
-                                e.stopPropagation();
-                                setSelectedNote(typedNote);
-                                setNoteContent(typedNote.content);
-                                setEditMode(true);
-                              }}
-                              className="h-7 w-7 p-0"
-                            >
-                              <Pencil className="h-4 w-4" />
-                              <span className="sr-only">Edit</span>
-                            </Button>                            <Button 
-                              variant="ghost" 
-                              size="sm"                              onClick={(e: React.MouseEvent) => {
-                                e.stopPropagation();
-                                setItemToDelete({ type: 'note', id: typedNote.id });
-                                setDeleteDialogOpen(true);
-                              }}
-                              className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Delete</span>
-                            </Button>
-                          </div>
-                        </div>                        <div className="text-sm text-muted-foreground mt-1 flex items-center justify-between">
-                          <span className="inline-block">{new Date(typedNote.updated_at).toLocaleDateString()}</span>
-                          {/* Folder name is not displayed for cleaner interface */}
-                        </div><div className="mt-2 text-sm line-clamp-2 leading-5 text-muted-foreground break-words">
-                          {stripText(typedNote.content, 120)}
-                        </div>
-                      </Card>
-                      );
-                    })}                    {getFilteredNotes().length === 0 && (
-                      <div className="col-span-full text-center p-8 text-muted-foreground">
-                        <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                        <h4 className="text-sm font-medium mb-1">Select a note to start editing</h4>
-                      </div>
-                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Display a welcome message instead of showing notes in the main container */}
+                    <div className="col-span-full text-center p-8 text-muted-foreground">
+                      {selectedFolder ? (
+                        <>
+                          <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                          <h4 className="text-sm font-medium mb-1">
+                            {folders.find(f => f.id === selectedFolder)?.name || 'Folder'} selected
+                          </h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Select a note from the sidebar or create a new note
+                          </p>
+                          <Button 
+                            size="sm" 
+                            onClick={() => setCreateNoteDialogOpen(true)}
+                            className="mx-auto"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            New Note
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                          <h4 className="text-sm font-medium mb-1">Select a folder to get started</h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Choose a folder from the sidebar to view and edit your notes
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
