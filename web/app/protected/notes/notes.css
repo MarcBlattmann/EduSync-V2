@@ -40,8 +40,23 @@
   transition: transform 0.2s ease;
 }
 
-.folder-toggle.expanded {
-  transform: rotate(90deg);
+/* Using ChevronDown/ChevronRight icons for folder state */
+
+/* Folder indentation styling for better hierarchy visibility */
+.ml-4 {
+  position: relative;
+  padding-left: 0.25rem;
+}
+
+.ml-4::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: hsl(var(--border) / 0.5);
+  height: 100%;
 }
 
 /* Note item styling */

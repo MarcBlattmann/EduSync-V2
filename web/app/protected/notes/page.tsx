@@ -426,15 +426,14 @@ function NotesContent() {
     if (foldersToShow.length === 0) {
       return null;
     }
-    
-    return (
+      return (
       <div className={cn(level > 0 ? "ml-4" : "")}>
         {foldersToShow.map(folder => {
           // Get notes for this folder
           const folderNotes = getFolderNotes(folder.id);
           
           return (
-            <div key={folder.id}>
+            <div key={folder.id} className="mb-1.5">
               <div 
                 className={cn(
                   "flex items-center py-1 px-2 rounded-md cursor-pointer group folder-tree-item",
@@ -523,17 +522,15 @@ function NotesContent() {
               </div>
               
               {expandedFolders[folder.id] && (
-                <>
-                  {/* Display notes within this folder */}
+                <>                  {/* Display notes within this folder */}
                   {folderNotes.length > 0 && (
-                    <div className="ml-4 mt-1">
+                    <div className="ml-4 mt-1 space-y-1">
                       {folderNotes.map(note => (
                         <div 
                           key={note.id}
                           className={cn(
                             "flex items-center py-1 px-2 rounded-md cursor-pointer group note-item",
-                            selectedNote?.id === note.id ? "active" : ""
-                          )}
+                            selectedNote?.id === note.id ? "active" : ""                          )}
                           onClick={() => {
                             setSelectedNote(note);
                             setNoteContent(note.content);
@@ -542,9 +539,7 @@ function NotesContent() {
                             if (isMobile) {
                               closeSidebar();
                             }
-                          }}
-                        >
-                          <div className="w-6"></div> {/* Spacer for alignment */}
+                          }}                        >
                           <div className="flex items-center gap-2 flex-1 p-1 pl-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm truncate">{note.title}</span>
