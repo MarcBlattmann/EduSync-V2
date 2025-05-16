@@ -34,6 +34,7 @@ import { NotesMobileProvider, useNotesMobile } from "./notes-mobile-context";
 import { MobileSidebar } from "./mobile-sidebar";
 import { MobileHeader } from "./mobile-header";
 import "./notes.css";
+import "./remove-outlines.css"; // Import additional CSS to remove input outlines
 import { getNoteId, isValidNote } from "./note-type-utils";
 import {
   DropdownMenu,
@@ -629,9 +630,7 @@ function NotesContent() {
         });
         return newState;
       });
-    }
-  }, [searchQuery, folders, notes]);
-
+    }  }, [searchQuery, folders, notes]);
   return (
     <>
       {/* Desktop header */}
@@ -988,9 +987,28 @@ function NotesContent() {
 }
 
 export default function Notes() {
+  // Adding an inline style to ensure focus outlines are removed
   return (
-    <NotesMobileProvider>
-      <NotesContent />
-    </NotesMobileProvider>
+    <>
+      {/* Inline style to remove focus outlines */}
+      <style jsx global>{`
+        /* High specificity selectors to remove outlines */
+        input:focus, textarea:focus, select:focus, button:focus, a:focus, [contenteditable]:focus, 
+        .ProseMirror:focus, .ProseMirror:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
+          border-color: hsl(var(--border)) !important;
+        }
+        
+        /* Remove shadcn/ui ring styling */
+        .ring-offset-background:focus-visible {
+          --tw-ring-offset-width: 0 !important;
+          --tw-ring-width: 0 !important;
+        }
+      `}</style>
+      <NotesMobileProvider>
+        <NotesContent />
+      </NotesMobileProvider>
+    </>
   );
 }

@@ -9,6 +9,77 @@
   overflow: hidden;
 }
 
+/* Remove outline from input fields, buttons, and interactive elements */
+.note-editor *, 
+.notes-container *, 
+[class*="dialog"] *, 
+.Dialog *,
+.DialogContent *,
+.MobileSidebar *,
+input, 
+textarea, 
+button, 
+select, 
+[contenteditable] {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Direct target for all elements within the notes app */
+.DialogContent input, 
+.DialogContent button,
+.AlertDialogContent input, 
+.AlertDialogContent button,
+.notes-container input,
+.notes-container button,
+[cmdk-root] * {
+  outline: none !important;
+  box-shadow: none !important;
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-color: transparent !important;
+}
+
+/* Global focus removal - extreme specificity */
+[id]:focus,
+[class]:focus,
+[type]:focus,
+button:focus,
+a:focus,
+textarea:focus,
+select:focus,
+[contenteditable]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Complete override for focus states */
+*:focus,
+*:focus-visible,
+*:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  outline-color: transparent !important;
+  outline-width: 0 !important;
+  outline-style: none !important;
+}
+
+/* Specific input focus overrides */
+input:focus,
+.ProseMirror:focus,
+.ProseMirror:focus-visible {
+  outline: none !important;
+  border-color: hsl(var(--border)) !important;
+  box-shadow: none !important;
+}
+
+/* Override shadcn focus styles */
+.ring-offset-background:focus-visible {
+  --tw-ring-offset-width: 0 !important;
+  --tw-ring-width: 0 !important;
+}
+
 /* Folder tree styling */
 .folder-with-content {
   font-weight: 500;
@@ -78,12 +149,23 @@
 
 /* TipTap editor styling */
 .ProseMirror {
-  outline: none;
+  outline: none !important;
   padding: 1rem;
   min-height: 200px;
   word-break: break-word;
   width: 100%;
   height: 100%;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ProseMirror:focus,
+.ProseMirror:focus-visible,
+.ProseMirror * {
+  outline: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline-style: none !important;
 }
 
 .editor-toolbar {
@@ -361,4 +443,33 @@
 
 .note-viewer p {
   margin-bottom: 0.75rem !important;
+}
+
+/* Input field styling specific to notes */
+.notes-container input:focus,
+.DialogContent input:focus,
+.MobileSidebar input:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: hsl(var(--border));
+}
+
+.notes-container input,
+input.border,
+.Dialog input,
+[class*="dialog"] input {
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+/* Reset shadcn/ui focus rings */
+.ring-offset-background[data-state],
+.notes-container [data-state],
+.ring-offset-background:focus,
+.ring-offset-background:focus-visible,
+.ring-offset-background:focus-within {
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-shadow: 0 0 #0000 !important;
+  --tw-shadow-colored: 0 0 #0000 !important;
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000) !important;
 }

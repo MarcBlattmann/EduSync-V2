@@ -83,3 +83,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Remove input field outlines - Target specific framework styles */
+.protected-notes input:focus,
+.protected-notes textarea:focus,
+.protected-notes select:focus,
+.protected-notes button:focus,
+.protected-notes [contenteditable]:focus,
+.protected-notes .ProseMirror:focus,
+.protected-notes .ProseMirror:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Override shadcn focus rings in notes section */
+.protected-notes .ring-offset-background:focus-visible,
+.protected-notes .ring-offset-background:focus {
+  --tw-ring-offset-width: 0 !important;
+  --tw-ring-shadow: none !important;
+  box-shadow: none !important;
+}

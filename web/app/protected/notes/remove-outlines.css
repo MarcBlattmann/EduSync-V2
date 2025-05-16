@@ -1,0 +1,70 @@
+/* 
+* This file contains styles to remove outlines from input fields and interactive elements 
+* in the notes section of the application.
+*
+* These styles use higher specificity and !important to ensure they override 
+* any framework styles that might be applying outlines.
+*/
+
+/* Reset all focus styles within the notes app components */
+div[class*="notes"] *:focus,
+div[class*="Dialog"] *:focus,
+div[class*="dialog"] *:focus,
+div[class*="sidebar"] *:focus,
+div[class*="mobile"] *:focus,
+div[class*="Dropdown"] *:focus,
+div[class*="dropdown"] *:focus,
+div[class*="Alert"] *:focus,
+div[class*="alert"] *:focus,
+.note-editor *:focus,
+.ProseMirror *:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Override specific shadcn/ui components that use ring styling */
+[data-state="open"]:focus-visible,
+[data-state="closed"]:focus-visible,
+[data-state]:focus,
+.ring-offset-background:focus-visible,
+.ring-offset-background:focus {
+  --tw-ring-offset-width: 0 !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-shadow: none !important;
+  --tw-shadow: none !important;
+  --tw-shadow-colored: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Target each specific form control with high specificity */
+.notes-container input:focus, 
+.notes-container textarea:focus, 
+.notes-container select:focus, 
+.notes-container button:focus, 
+.notes-container a:focus, 
+.notes-container [contenteditable]:focus,
+.DialogContent input:focus,
+.DialogContent button:focus,
+.ProseMirror:focus,
+.ProseMirror:focus-visible {
+  outline-width: 0 !important;
+  outline-style: none !important;
+  outline-color: transparent !important;
+  box-shadow: none !important;
+  border-color: hsl(var(--border)) !important;
+  -webkit-appearance: none !important;
+}
+
+/* Specific override for TipTap editor */
+.ProseMirror,
+.ProseMirror:focus, 
+.ProseMirror:focus-visible, 
+.ProseMirror *:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
