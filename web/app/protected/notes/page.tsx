@@ -347,32 +347,66 @@ function NotesContent() {
   const getFilteredNotes = (): Note[] => {
     let filteredNotes: Note[] = notes;
     
-    // Filter by search query if provided - always prioritize search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return filteredNotes.filter(note => 
-        note.title.toLowerCase().includes(query) || 
-        stripHtml(note.content).toLowerCase().includes(query)
-      );
-    }
-    
-    // If no search query, only show notes for the currently selected folder
+    // Only show notes for the currently selected folder, regardless of search query
     if (selectedFolder) {
       return filteredNotes.filter(note => note.folder_id === selectedFolder);
     }
     
-    // If no folder is selected and no search query, return an empty array
+    // If no folder is selected, return an empty array
     return [] as Note[];
+  };
+
+  // Get search results that match the search query
+  const getSearchResults = (): Note[] => {
+    if (!searchQuery) return [];
+    
+    const query = searchQuery.toLowerCase();
+    return notes.filter(note => 
+      note.title.toLowerCase().includes(query) || 
+      stripHtml(note.content).toLowerCase().includes(query)
+    );
   };
 
   // Get subfolders for a parent folder
   const getSubfolders = (parentId: string | null) => {
     return folders.filter(folder => folder.parent_id === parentId);
   };
+
+  // Check if a folder has notes matching search query
+  const folderHasSearchResults = (folderId: string): boolean => {
+    // If no search query, always return true
+    if (!searchQuery) return true;
+    
+    // Check if this folder has any notes matching the search query
+    const query = searchQuery.toLowerCase();
+    const notesInFolder = notes.filter(note => note.folder_id === folderId);
+    
+    const hasMatchingNotes = notesInFolder.some(note => 
+      note.title.toLowerCase().includes(query) || 
+      stripHtml(note.content).toLowerCase().includes(query)
+    );
+    
+    if (hasMatchingNotes) return true;
+    
+    // Check if any subfolders have matching notes
+    const subfolders = folders.filter(folder => folder.parent_id === folderId);
+    return subfolders.some(subfolder => folderHasSearchResults(subfolder.id));
+  };
   
-  // Get notes for a specific folder
+  // Get notes for a specific folder (filtered by search query if present)
   const getFolderNotes = (folderId: string) => {
-    return notes.filter(note => note.folder_id === folderId);
+    let folderNotes = notes.filter(note => note.folder_id === folderId);
+    
+    // If there's a search query, only show notes that match the search within this folder
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      folderNotes = folderNotes.filter(note => 
+        note.title.toLowerCase().includes(query) || 
+        stripHtml(note.content).toLowerCase().includes(query)
+      );
+    }
+    
+    return folderNotes;
   };
 
   // Render folder tree recursively
@@ -383,9 +417,18 @@ function NotesContent() {
       return null;
     }
     
+    // Filter folders based on search results if search query exists
+    const foldersToShow = searchQuery 
+      ? subfolders.filter(folder => folderHasSearchResults(folder.id))
+      : subfolders;
+    
+    if (foldersToShow.length === 0) {
+      return null;
+    }
+    
     return (
       <div className={cn(level > 0 ? "ml-4" : "")}>
-        {subfolders.map(folder => {
+        {foldersToShow.map(folder => {
           // Get notes for this folder
           const folderNotes = getFolderNotes(folder.id);
           
@@ -551,6 +594,45 @@ function NotesContent() {
     );
   };
 
+  // When search query changes, expand folders with search results
+  useEffect(() => {
+    if (searchQuery) {
+      // First, identify all folders with search results
+      const foldersWithResults = new Set<string>();
+      
+      // Helper function to find all folders with matching notes
+      const findFoldersWithResults = (folderId: string) => {
+        if (folderHasSearchResults(folderId)) {
+          foldersWithResults.add(folderId);
+          
+          // Also add all parent folders to ensure the path is visible
+          let currentFolder = folders.find(f => f.id === folderId);
+          while (currentFolder?.parent_id) {
+            foldersWithResults.add(currentFolder.parent_id);
+            currentFolder = folders.find(f => f.id === currentFolder?.parent_id);
+          }
+        }
+        
+        // Recursively check subfolders
+        const subfolders = folders.filter(folder => folder.parent_id === folderId);
+        subfolders.forEach(subfolder => findFoldersWithResults(subfolder.id));
+      };
+      
+      // Start from root folders
+      const rootFolders = folders.filter(folder => folder.parent_id === null);
+      rootFolders.forEach(folder => findFoldersWithResults(folder.id));
+      
+      // Update expanded folders state
+      setExpandedFolders(prev => {
+        const newState = { ...prev };
+        foldersWithResults.forEach(folderId => {
+          newState[folderId] = true;
+        });
+        return newState;
+      });
+    }
+  }, [searchQuery, folders, notes]);
+
   return (
     <>
       {/* Desktop header */}
@@ -702,9 +784,7 @@ function NotesContent() {
                 </Button>
               </>
             )}
-          </div>
-
-          {/* Notes List and Editor */}
+          </div>          {/* Notes List and Editor */}
           <div className="border rounded-md h-full flex flex-col note-transition">
             {selectedNote ? (
               // Note editor view
@@ -742,8 +822,7 @@ function NotesContent() {
                           setItemToDelete({ type: 'note', id: selectedNote.id });
                           setDeleteDialogOpen(true);
                         }}
-                      >
-                        <Trash2 className="h-4 w-4" />
+                      >                        <Trash2 className="h-4 w-4" />
                         <span className="sr-only md:not-sr-only md:ml-1">Delete</span>
                       </Button>
                     </div>
@@ -787,24 +866,15 @@ function NotesContent() {
                     </div>
                   )}
                 </div>
-              </div>            ) : (
-              // Notes list view
+              </div>            ) : (              // Notes list view
               <div className="h-full p-3 overflow-auto">
-                <h3 className="text-lg font-medium mb-4 ml-2">
-                  {searchQuery 
-                    ? `Search results for "${searchQuery}"`
-                    : selectedFolder 
-                      ? `${folders.find(f => f.id === selectedFolder)?.name || 'Folder'}`
-                      : 'Select a folder or search for notes'}
-                </h3>
-                
                 {isLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[1, 2, 3, 4].map(i => (
                       <Skeleton key={i} className="h-32 w-full" />
                     ))}
-                  </div>
-                ) : (                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">                    {getFilteredNotes().map((note: any) => {
+                  </div>                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">                    {getFilteredNotes().map((note: any) => {
                       // Use type assertion to ensure type safety
                       const typedNote: Note = note as Note;
                       return (
@@ -844,72 +914,18 @@ function NotesContent() {
                               <span className="sr-only">Delete</span>
                             </Button>
                           </div>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1 flex items-center justify-between">
-                          <span className="inline-block">{new Date(typedNote.updated_at).toLocaleDateString()}</span>                          {searchQuery && typedNote.folder_id && (
-                            <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
-                              {folders.find(f => f.id === typedNote.folder_id)?.name || 'Unknown folder'}
-                            </span>
-                          )}
-                        </div>                        <div className="mt-2 text-sm line-clamp-2 leading-5 text-muted-foreground break-words">
+                        </div>                        <div className="text-sm text-muted-foreground mt-1 flex items-center justify-between">
+                          <span className="inline-block">{new Date(typedNote.updated_at).toLocaleDateString()}</span>
+                          {/* Folder name is not displayed for cleaner interface */}
+                        </div><div className="mt-2 text-sm line-clamp-2 leading-5 text-muted-foreground break-words">
                           {stripText(typedNote.content, 120)}
                         </div>
                       </Card>
                       );
-                    })}
-                    {getFilteredNotes().length === 0 && (
+                    })}                    {getFilteredNotes().length === 0 && (
                       <div className="col-span-full text-center p-8 text-muted-foreground">
-                        {searchQuery ? (
-                          <>
-                            <Search className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                            <h4 className="text-sm font-medium mb-1">No results found</h4>
-                            <p className="text-xs mb-4">
-                              Try a different search term
-                            </p>
-                            <Button 
-                              size="sm"
-                              variant="outline" 
-                              onClick={() => setSearchQuery('')}
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Clear Search
-                            </Button>
-                          </>
-                        ) : selectedFolder ? (
-                          <>
-                            <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                            <h4 className="text-sm font-medium mb-1">No notes in this folder</h4>
-                            <p className="text-xs mb-4">
-                              Create your first note in this folder
-                            </p>
-                            <Button 
-                              size="sm" 
-                              onClick={() => {
-                                setCreateNoteDialogOpen(true);
-                              }}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              New Note
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Folder className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                            <h4 className="text-sm font-medium mb-1">Select a folder</h4>
-                            <p className="text-xs mb-4">
-                              Choose a folder to view or create notes, or search across all notes
-                            </p>
-                            {isMobile && (
-                              <Button 
-                                size="sm" 
-                                onClick={openSidebar}
-                              >
-                                <Folder className="h-4 w-4 mr-1" />
-                                View Folders
-                              </Button>
-                            )}
-                          </>
-                        )}
+                        <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                        <h4 className="text-sm font-medium mb-1">Select a note to start editing</h4>
                       </div>
                     )}
                   </div>
