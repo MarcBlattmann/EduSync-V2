@@ -1,0 +1,70 @@
+@media (max-width: 767px) {
+  /* Mobile-specific styling for notes page */
+  .notes-container-mobile {
+    padding: 0;
+    margin-top: 0.25rem;
+  }
+  
+  /* Improve tap target sizes on mobile */
+  .notes-mobile-item {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Improve the mobile folder structure display */
+  .folder-structure-mobile {
+    margin-left: 0.5rem;
+  }
+  
+  /* Ensure content doesn't overflow on small screens */
+  .note-content-mobile {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Makes the folder icons more visible */
+  .folder-icon-mobile {
+    flex-shrink: 0;
+    margin-right: 0.5rem;
+  }
+  
+  /* Mobile header styling */
+  .notes-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    backdrop-filter: blur(8px);
+  }
+  
+  /* Fix for sidebar buttons positioning */
+  .sidebar-buttons-container {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+  
+  /* Add a slight indicator to show which button is for which sidebar */
+  .app-sidebar-button::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 2px;
+    background-color: var(--primary);
+    border-radius: 1px;
+  }
+  
+  .notes-sidebar-button::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 2px;
+    background-color: var(--primary);
+    border-radius: 1px;
+  }
+}

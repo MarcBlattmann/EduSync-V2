@@ -35,6 +35,8 @@ import { MobileSidebar } from "./mobile-sidebar";
 import { MobileHeader } from "./mobile-header";
 import "./notes.css";
 import "./remove-outlines.css"; // Import additional CSS to remove input outlines
+import "./mobile-notes.css"; // Import mobile-specific styling
+import "./mobile-sidebar-compat.css"; // Import compatibility CSS for dual sidebar setup
 import { getNoteId, isValidNote } from "./note-type-utils";
 import {
   DropdownMenu,
@@ -91,7 +93,7 @@ function stripText(text: string | null, maxLength: number = 150): string {
 }
 
 function NotesContent() {
-  const { isMobile, openSidebar, closeSidebar } = useNotesMobile();
+  const { isMobile, isSidebarOpen, openSidebar, closeSidebar } = useNotesMobile();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);

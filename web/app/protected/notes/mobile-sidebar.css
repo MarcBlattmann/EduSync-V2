@@ -1,0 +1,106 @@
+/* Mobile Sidebar Specific Styles */
+
+/* Styling for notes folders */
+.notes-folders-container {
+  padding-bottom: env(safe-area-inset-bottom); /* Handle iOS home indicator */
+}
+.mobile-sliding-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100vh;
+  background-color: var(--background);
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 40; /* Make sure this is below the main app sidebar (which is typically 50) */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  padding-top: env(safe-area-inset-top); /* Handle iOS notch */
+}
+
+.mobile-sliding-panel.open {
+  transform: translateX(0);
+}
+
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent body scroll when sidebar is open */
+body.sidebar-open {
+  overflow: hidden;
+}
+
+/* Add a slight delay to focus effect for better UX */
+.mobile-nav-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-nav-item::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background-color: currentColor;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0);
+  transition: opacity 0.5s, transform 0.5s;
+  pointer-events: none;
+  border-radius: 0.5rem;
+}
+
+.mobile-nav-item:active::after {
+  opacity: 0.05;
+  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 0.1s, transform 0.1s;
+}
+
+.mobile-nav-section {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-nav-section-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  padding: 0 1rem 0.5rem;
+}
+
+.mobile-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  transition: all 0.15s ease;
+  border-left: 2px solid transparent;
+}
+
+.mobile-nav-item:active {
+  background-color: var(--accent);
+}
+
+.mobile-nav-item.active {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+  border-left: 2px solid var(--primary);
+  font-weight: 500;
+}
+
+.mobile-nav-item-icon {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+.mobile-nav-item.active .mobile-nav-item-icon {
+  color: var(--primary);
+}
