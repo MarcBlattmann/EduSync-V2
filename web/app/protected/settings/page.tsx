@@ -14,6 +14,7 @@ import { Lock, Shield, CheckCircle2, UserCircle, Palette, Upload, Loader2 } from
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { useGradeSystem } from "@/hooks/use-grade-system";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { v4 as uuidv4 } from 'uuid';
@@ -29,20 +30,14 @@ export default function Settings() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [passwordCurrent, setPasswordCurrent] = useState("");
   const [passwordNew, setPasswordNew] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [gradeSystem, setGradeSystem] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('gradeSystem') || '6best';
-    }
-    return '6best';
-  });
+  const [passwordConfirm, setPasswordConfirm] = useState("");  // Use the grade system hook instead of local state
+  const { gradeSystem, setGradeSystem, isLoading: isGradeSystemLoading } = useGradeSystem();
 
   const router = useRouter();
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
   
-  useEffect(() => {
-    const checkUser = async () => {
+  useEffect(() => {    const checkUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
@@ -57,6 +52,9 @@ export default function Settings() {
         if (user.user_metadata) {
           setFullName(user.user_metadata.full_name || "");
           setAvatar(user.user_metadata.avatar_url || "");
+          
+          // Grade system is now handled by the useGradeSystem hook
+          // so we don't need to manage it manually here
         }
         
         setIsLoading(false);
@@ -144,17 +142,27 @@ export default function Settings() {
     setTimeout(() => {
       setSaveSuccess(false);
     }, 3000);
-  };
-
-  // Save grade system to localStorage and (optionally) user metadata
-  const handleGradeSystemChange = async (newSystem: string) => {
-    setGradeSystem(newSystem);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('gradeSystem', newSystem);
+  };  // Save grade system to both localStorage and Supabase using our hook
+  const handleGradeSystemChange = async (newSystem: '6best' | '1best') => {
+    setIsSaving(true);
+    
+    try {
+      // Use the setGradeSystem function from our hook
+      // This will update both localStorage and Supabase
+      const success = await setGradeSystem(newSystem);
+      
+      if (!success) {
+        throw new Error('Failed to save grade system');
+      }
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error saving grade system:", error);
+      alert("Failed to save grade system preference");
+    } finally {
+      setIsSaving(false);
     }
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
-    // Optionally: Save to Supabase user metadata here
   };
 
   // Navigation items for settings
@@ -530,12 +538,17 @@ export default function Settings() {
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">Choose which grade is considered the best for your system.</p>
                     </div>
-                  </CardContent>
-                  <CardFooter className="border-t px-6 py-4">
+                  </CardContent>                  <CardFooter className="border-t px-6 py-4 flex justify-between items-center">
                     {saveSuccess && activeTab === "system" && (
                       <div className="flex items-center text-green-600 dark:text-green-400">
                         <CheckCircle2 className="h-4 w-4 mr-1.5" />
                         <span className="text-sm">Preferences saved</span>
+                      </div>
+                    )}
+                    {isSaving && activeTab === "system" && (
+                      <div className="flex items-center">
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                        <span className="text-sm">Saving...</span>
                       </div>
                     )}
                   </CardFooter>

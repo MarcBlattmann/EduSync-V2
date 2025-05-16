@@ -57,19 +57,30 @@ export function AddGradeDialog({
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
   const [showCustomSubject, setShowCustomSubject] = useState(false);
-
-  // Get grade system from localStorage
-  const getGradeSystem = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('gradeSystem') || '6best';
-    }
-    return '6best';
-  };
+  // Use our centralized grade system utilities
+  const [gradeSystemState, setGradeSystemState] = useState('6best');
+  
+  // Get grade system from localStorage and listen for changes
+  useEffect(() => {
+    // Import the utility function dynamically to avoid SSR issues
+    import('@/utils/grade-settings').then(({ getGradeSystemSync }) => {
+      setGradeSystemState(getGradeSystemSync());
+      
+      // Listen for changes
+      const handleStorageChange = () => {
+        setGradeSystemState(getGradeSystemSync());
+      };
+      
+      window.addEventListener('storage', handleStorageChange);
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+      };
+    });
+  }, []);
 
   // Get min/max for grade input based on system
   const getGradeRange = () => {
-    const system = getGradeSystem();
-    if (system === '1best') {
+    if (gradeSystemState === '1best') {
       return { min: 1, max: 6, label: 'Grade (1-6, 1 is best)' };
     } else {
       return { min: 1, max: 6, label: 'Grade (1-6, 6 is best)' };

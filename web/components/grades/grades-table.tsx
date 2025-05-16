@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Table, 
   TableBody, 
@@ -51,26 +51,32 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
     key: "date",
     direction: "desc",
   });
-
-  // Helper function for text color based on grade system
-  const getGradeSystem = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('gradeSystem') || '6best';
-    }
-    return '6best';
-  };
-
+  // Import grade system utilities
+  const [gradeSystemState, setGradeSystemState] = useState('6best');
+  
+  // Get initial grade system and listen for changes
+  useEffect(() => {
+    // Import utilities dynamically to avoid SSR issues
+    const { getGradeSystemSync } = require('@/utils/grade-settings');
+    
+    // Set initial state
+    setGradeSystemState(getGradeSystemSync());
+    
+    // Listen for changes
+    const handleStorageChange = () => {
+      setGradeSystemState(getGradeSystemSync());
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+  
   const getGradeColor = (grade: number): string => {
-    const system = getGradeSystem();
-    if (system === '1best') {
-      if (grade <= 2) return "text-green-600 dark:text-green-400";
-      if (grade <= 4) return "text-orange-500 dark:text-orange-300";
-      return "text-red-600 dark:text-red-400";
-    } else {
-      if (grade >= 5) return "text-green-600 dark:text-green-400";
-      if (grade >= 4) return "text-orange-500 dark:text-orange-300";
-      return "text-red-600 dark:text-red-400";
-    }
+    // Import directly to use in render
+    const { getGradeColor } = require('@/utils/grade-settings');
+    return getGradeColor(grade, gradeSystemState as any);
   };
 
   // Handle sorting

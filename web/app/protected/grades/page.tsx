@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { useGradeSystem, getGradeColor } from "@/hooks/use-grade-system";
 
 // Define types for the grade data
 interface Grade {
@@ -45,6 +46,9 @@ export default function Grades() {
   const [editingGrade, setEditingGrade] = useState<Grade | null>(null);
   const [averageGrade, setAverageGrade] = useState<number | null>(null);
   const [subjectAverages, setSubjectAverages] = useState<Record<string, number>>({});
+  
+  // Use our custom hook for grade system
+  const { gradeSystem } = useGradeSystem();
   
   // Initialize Supabase client
   const supabase = createClient();
@@ -233,56 +237,18 @@ export default function Grades() {
     
     return subjectColors;
   };
-
-  const getGradeColor = (grade: number) => {
+  const getGradeBadgeColor = (grade: number) => {
     if (grade >= 5) return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
     if (grade >= 4) return "bg-orange-200 text-orange-700 dark:bg-orange-800/50 dark:text-orange-300";
     return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
   };
-
-  // Helper for grade system
-  const getGradeSystem = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('gradeSystem') || '6best';
-    }
-    return '6best';
-  };
-
-  // Grade system state, so chart updates on change
-  const [gradeSystem, setGradeSystem] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('gradeSystem') || '6best';
-    }
-    return '6best';
-  });
-
-  // Listen for changes in localStorage (settings page)
-  useEffect(() => {
-    const handleStorage = () => {
-      const system = localStorage.getItem('gradeSystem') || '6best';
-      setGradeSystem(system);
-    };
-    window.addEventListener('storage', handleStorage);
-    // Also update on focus (user might have changed settings in another tab)
-    window.addEventListener('focus', handleStorage);
-    return () => {
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('focus', handleStorage);
-    };
-  }, []);
-
+  
+  // Note: We're now using the gradeSystem from the useGradeSystem() hook
+  // which is already declared at the top of the component.
   // Color for subject averages, adapts to grade system
   const getAverageGradeTextColor = (grade: number) => {
-    const system = getGradeSystem();
-    if (system === '1best') {
-      if (grade <= 2) return "text-green-600 dark:text-green-400";
-      if (grade <= 4) return "text-orange-500 dark:text-orange-300";
-      return "text-red-600 dark:text-red-400";
-    } else {
-      if (grade >= 5) return "text-green-600 dark:text-green-400";
-      if (grade >= 4) return "text-orange-500 dark:text-orange-300";
-      return "text-red-600 dark:text-red-400";
-    }
+    // Use the imported getGradeColor function with the current gradeSystem
+    return getGradeColor(grade, gradeSystem);
   };
   
   return (
