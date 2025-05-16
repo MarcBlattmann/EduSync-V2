@@ -7,6 +7,7 @@ import {
   Home,
   Settings2,
   BookOpen,
+  FileText,
   Calendar as CalendarIcon,
 } from "lucide-react"
 
@@ -49,6 +50,12 @@ const navigationData = {
       title: "Grades",
       url: "/protected/grades",
       icon: BookOpen,
+      noSubmenu: true,
+    },
+    {
+      title: "Notes",
+      url: "/protected/notes",
+      icon: FileText,
       noSubmenu: true,
     }
   ]

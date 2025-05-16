@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "@tiptap/extension-bold": "^2.12.0",
+    "@tiptap/extension-bullet-list": "^2.12.0",
+    "@tiptap/extension-code": "^2.12.0",
+    "@tiptap/extension-code-block": "^2.12.0",
+    "@tiptap/extension-document": "^2.12.0",
+    "@tiptap/extension-heading": "^2.12.0",
+    "@tiptap/extension-italic": "^2.12.0",
+    "@tiptap/extension-link": "^2.12.0",
+    "@tiptap/extension-list-item": "^2.12.0",
+    "@tiptap/extension-ordered-list": "^2.12.0",
+    "@tiptap/extension-paragraph": "^2.12.0",
+    "@tiptap/extension-placeholder": "^2.12.0",
+    "@tiptap/extension-text": "^2.12.0",
+    "@tiptap/pm": "^2.12.0",
+    "@tiptap/react": "^2.12.0"
+  }
+}
