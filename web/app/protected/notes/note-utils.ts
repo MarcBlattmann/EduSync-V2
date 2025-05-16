@@ -32,7 +32,7 @@ export function asNote(obj: any): Note {
 }
 
 // Function to safely map over notes array with proper typing
-export function mapNotes(notes: any[], mapper: (note: Note) => JSX.Element): JSX.Element[] {
+export function mapNotes(notes: any[], mapper: (note: Note) => React.ReactElement): React.ReactElement[] {
   return notes
     .map(note => asNote(note))
     .map(mapper);
