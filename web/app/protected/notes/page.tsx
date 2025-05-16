@@ -209,13 +209,13 @@ function NotesContent() {
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    
-    const { data, error } = await supabase
+      const { data, error } = await supabase
       .from('notes')
       .insert([
         {
           title: newNoteName,
-          content: '',
+          // Start with a properly structured HTML document to ensure formatting works
+          content: `<h1>${newNoteName}</h1><p>Start writing your note here...</p>`,
           folder_id: selectedFolder,
           user_id: user.id
         }
@@ -223,10 +223,12 @@ function NotesContent() {
       .select();
     
     if (error) {
-      console.error('Error creating note:', error);
-    } else {
+      console.error('Error creating note:', error);    } else {
       // Add new note to state and reset form
       const newNote = data![0] as Note;
+      console.log("Created new note with content:", newNote.content);
+      
+      // Ensure the note list is updated with the new note
       setNotes([newNote, ...notes]);
       setNewNoteName('');
       setCreateNoteDialogOpen(false);
@@ -306,15 +308,23 @@ function NotesContent() {
     
     setDeleteDialogOpen(false);
     setItemToDelete(null);
-  };
-
-  // Save note content
+  };  // Save note content
   const saveNote = async () => {
     if (!selectedNote) return;
     
+    // Log the content being saved for debugging purposes
+    console.log("Original note content for saving:", noteContent);
+    
+    // Ensure the content is properly saved as HTML
+    // The TipTap editor generates HTML content which needs to be saved as-is
+    const contentToSave = noteContent;
+    
+    // Log the contentToSave to verify it's the correct HTML
+    console.log("Content being saved to database:", contentToSave);
+    
     const { error } = await supabase
       .from('notes')
-      .update({ content: noteContent, updated_at: new Date().toISOString() })
+      .update({ content: contentToSave, updated_at: new Date().toISOString() })
       .eq('id', selectedNote.id);
     
     if (error) {
@@ -323,12 +333,15 @@ function NotesContent() {
       // Update note in state
       const updatedNotes = notes.map(note => 
         note.id === selectedNote.id 
-          ? { ...note, content: noteContent, updated_at: new Date().toISOString() } 
+          ? { ...note, content: contentToSave, updated_at: new Date().toISOString() } 
           : note
       );
       setNotes(updatedNotes);
-      setSelectedNote({ ...selectedNote, content: noteContent, updated_at: new Date().toISOString() });
+      setSelectedNote({ ...selectedNote, content: contentToSave, updated_at: new Date().toISOString() });
       setEditMode(false);
+      
+      // Log the content after it has been saved
+      console.log("Note content after saving:", contentToSave);
     }
   };  // Get filtered notes for the current folder or search results
   const getFilteredNotes = (): Note[] => {
@@ -706,11 +719,20 @@ function NotesContent() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                      {editMode ? (
+                    <div className="flex items-center gap-2 mt-2 sm:mt-0">                      {editMode ? (
                         <Button size="sm" onClick={saveNote}>Save</Button>
                       ) : (
-                        <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>Edit</Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => {
+                            console.log("Switching to edit mode (desktop), content:", selectedNote.content);
+                            setNoteContent(selectedNote.content);
+                            setEditMode(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
                       )}
                       <Button 
                         size="sm" 
@@ -745,12 +767,21 @@ function NotesContent() {
                         </div>
                       )}
                     </>
-                  ) : (
-                    <div className="p-3 md:p-4">
+                  ) : (                    <div className="p-3 md:p-4">
                       <NoteViewer content={selectedNote.content} className="h-full" />
                       {isMobile && (
                         <div className="p-2 flex justify-end border-t sticky bottom-0 bg-background">
-                          <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>Edit</Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => {
+                              console.log("Switching to edit mode, content:", selectedNote.content);
+                              setNoteContent(selectedNote.content);
+                              setEditMode(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -779,8 +810,8 @@ function NotesContent() {
                       return (
                       <Card 
                         key={typedNote.id}                        className={cn(                          "p-3 md:p-4 cursor-pointer note-item note-list-item", 
-                          selectedNote !== null && getNoteId(selectedNote) === typedNote.id ? "active" : ""
-                        )}                        onClick={() => {
+                          selectedNote !== null && getNoteId(selectedNote) === typedNote.id ? "active" : ""                        )}                        onClick={() => {
+                          console.log("Selected note content:", typedNote.content);
                           setSelectedNote(typedNote);
                           setNoteContent(typedNote.content);
                           setEditMode(false);

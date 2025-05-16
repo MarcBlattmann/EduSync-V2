@@ -305,3 +305,45 @@
 .mobile-sliding-panel.open {
   transform: translateX(0);
 }
+
+/* Additional styles for note-viewer to ensure formatting is displayed correctly */
+/* Apply TipTap content styling to the note viewer component for consistency */
+.note-viewer h1 {
+  font-size: 1.75rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 1rem !important;
+  margin-top: 1.25rem !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.note-viewer h2 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.75rem !important;
+  margin-top: 1rem !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.note-viewer h3 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.5rem !important;
+  margin-top: 0.75rem !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.note-viewer ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.note-viewer ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.note-viewer p {
+  margin-bottom: 0.75rem !important;
+}

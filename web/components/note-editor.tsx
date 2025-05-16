@@ -21,6 +21,9 @@ interface NoteEditorProps {
 }
 
 export function NoteEditor({ content, onChange, className, onEditorReady }: NoteEditorProps) {
+  // Add debugging to check the received content
+  console.log("NoteEditor received content:", content);
+  
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -44,9 +47,11 @@ export function NoteEditor({ content, onChange, className, onEditorReady }: Note
         allowBase64: true,
         inline: true,
       }),
-    ],
-    content,    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+    ],    content,    onUpdate: ({ editor }) => {
+      // Get the full HTML content and log it for debugging
+      const html = editor.getHTML();
+      console.log("Editor updated, HTML content:", html);
+      onChange(html);
     },
     editorProps: {
       attributes: {
@@ -60,11 +65,12 @@ export function NoteEditor({ content, onChange, className, onEditorReady }: Note
     if (editor && onEditorReady) {
       onEditorReady(editor);
     }
-  }, [editor, onEditorReady]);
-  // Update editor content when content prop changes
+  }, [editor, onEditorReady]);  // Update editor content when content prop changes
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+      console.log("Updating editor content:", content);
+      // Ensure proper HTML parsing by using setContent with specific options
+      editor.commands.setContent(content, false);
     }
   }, [content, editor]);
   return (
