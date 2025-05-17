@@ -3,7 +3,7 @@ import { createClient } from './supabase/client';
 /**
  * Grade system types supported by the application
  */
-export type GradeSystem = '6best' | '1best';
+export type GradeSystem = '6best' | '1best' | 'american' | 'gpa' | 'percentage';
 
 /**
  * Get the user's preferred grade system from their Supabase metadata or localStorage
@@ -25,11 +25,12 @@ export async function getUserGradeSystem(): Promise<GradeSystem> {
       }
       return user.user_metadata.grade_system as GradeSystem;
     }
-    
-    // If not available in user metadata or user not logged in, check localStorage
+      // If not available in user metadata or user not logged in, check localStorage
     if (typeof window !== 'undefined') {
       const localGradeSystem = localStorage.getItem('gradeSystem');
-      if (localGradeSystem === '1best' || localGradeSystem === '6best') {
+      if (localGradeSystem === '1best' || localGradeSystem === '6best' || 
+          localGradeSystem === 'american' || localGradeSystem === 'gpa' || 
+          localGradeSystem === 'percentage') {
         // If we found it in localStorage but not in Supabase, try to save it to Supabase
         if (user) {
           try {

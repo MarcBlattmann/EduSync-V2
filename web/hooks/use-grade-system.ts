@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
-export type GradeSystem = '6best' | '1best';
+export type GradeSystem = '6best' | '1best' | 'american' | 'gpa' | 'percentage';
 
 /**
  * React hook that manages grade system state and syncs between localStorage and Supabase
@@ -15,7 +15,7 @@ export function useGradeSystem() {
   const [gradeSystem, setGradeSystemState] = useState<GradeSystem>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('gradeSystem');
-      return (stored === '1best' || stored === '6best') 
+      return (stored === '1best' || stored === '6best' || stored === 'american' || stored === 'gpa' || stored === 'percentage') 
         ? stored 
         : '6best';
     }
@@ -96,17 +96,175 @@ export function useGradeSystem() {
  * Get the grade color based on the grade value and system
  * 
  * @param grade - The grade value
- * @param system - The grade system (6best or 1best)
+ * @param system - The grade system ('6best', '1best', 'american', 'gpa', 'percentage')
  * @returns CSS class for the appropriate text color
  */
 export function getGradeColor(grade: number, system: GradeSystem): string {
-  if (system === '1best') {
-    if (grade <= 2) return "text-green-600 dark:text-green-400";
-    if (grade <= 4) return "text-orange-500 dark:text-orange-300";
-    return "text-red-600 dark:text-red-400";
-  } else {
-    if (grade >= 5) return "text-green-600 dark:text-green-400";
-    if (grade >= 4) return "text-orange-500 dark:text-orange-300";
-    return "text-red-600 dark:text-red-400";
+  switch (system) {
+    case '1best':
+      if (grade <= 2) return "text-green-600 dark:text-green-400";
+      if (grade <= 4) return "text-orange-500 dark:text-orange-300";
+      return "text-red-600 dark:text-red-400";
+    
+    case 'american':
+      // American letter grade system (A=4.0, B=3.0, etc.)
+      if (grade >= 4) return "text-green-600 dark:text-green-400";      // A (4.0-3.7)
+      if (grade >= 3) return "text-green-500 dark:text-green-300";      // B (3.3-3.0)
+      if (grade >= 2) return "text-yellow-500 dark:text-yellow-300";    // C (2.7-2.0)
+      if (grade >= 1) return "text-orange-500 dark:text-orange-300";    // D (1.7-1.0)
+      return "text-red-600 dark:text-red-400";                         // F (0.0)
+    
+    case 'gpa':
+      // GPA system (0.0-4.0)
+      if (grade >= 3.7) return "text-green-600 dark:text-green-400";    // A/A-
+      if (grade >= 3.0) return "text-green-500 dark:text-green-300";    // B+/B/B-
+      if (grade >= 2.0) return "text-yellow-500 dark:text-yellow-300";  // C+/C/C-
+      if (grade >= 1.0) return "text-orange-500 dark:text-orange-300";  // D+/D/D-
+      return "text-red-600 dark:text-red-400";                         // F
+    
+    case 'percentage':
+      // Percentage-based system (0-100)
+      if (grade >= 90) return "text-green-600 dark:text-green-400";     // A (90-100%)
+      if (grade >= 80) return "text-green-500 dark:text-green-300";     // B (80-89%)
+      if (grade >= 70) return "text-yellow-500 dark:text-yellow-300";   // C (70-79%)
+      if (grade >= 60) return "text-orange-500 dark:text-orange-300";   // D (60-69%)
+      return "text-red-600 dark:text-red-400";                         // F (0-59%)
+    
+    case '6best':
+    default:
+      // Default 6 best system
+      if (grade >= 5) return "text-green-600 dark:text-green-400";
+      if (grade >= 4) return "text-orange-500 dark:text-orange-300";
+      return "text-red-600 dark:text-red-400";
+  }
+}
+
+/**
+ * Format a numerical grade to the appropriate string representation
+ * based on the chosen grade system
+ * 
+ * @param grade - Numerical grade value
+ * @param system - The grade system to use for formatting
+ * @returns Formatted grade string
+ */
+export function formatGrade(grade: number, system: GradeSystem): string {
+  switch (system) {
+    case 'american':
+      // Convert numerical value to letter grade
+      if (grade >= 4.0) return 'A';
+      if (grade >= 3.7) return 'A-';
+      if (grade >= 3.3) return 'B+';
+      if (grade >= 3.0) return 'B';
+      if (grade >= 2.7) return 'B-';
+      if (grade >= 2.3) return 'C+';
+      if (grade >= 2.0) return 'C';
+      if (grade >= 1.7) return 'C-';
+      if (grade >= 1.3) return 'D+';
+      if (grade >= 1.0) return 'D';
+      if (grade >= 0.7) return 'D-';
+      return 'F';
+    
+    case 'gpa':
+      // Format to one decimal place
+      return grade.toFixed(1);
+    
+    case 'percentage':
+      // Format as percentage
+      return `${Math.round(grade)}%`;
+    
+    case '6best':
+    case '1best':
+    default:
+      // For numerical systems, just return the number
+      return grade.toString();
+  }
+}
+
+/**
+ * Get the grade range for the selected grading system
+ * 
+ * @param system - The grade system
+ * @returns Object containing min and max values for the system
+ */
+export function getGradeRange(system: GradeSystem): { min: number, max: number, step: number } {
+  switch (system) {
+    case '1best':
+      return { min: 1, max: 6, step: 1 };
+    case '6best':
+      return { min: 1, max: 6, step: 1 };
+    case 'american':
+      return { min: 0, max: 4, step: 0.3 }; // Step of 0.3 allows for +/- grades
+    case 'gpa':
+      return { min: 0, max: 4, step: 0.1 };
+    case 'percentage':
+      return { min: 0, max: 100, step: 1 };
+    default:
+      return { min: 1, max: 6, step: 1 };
+  }
+}
+
+/**
+ * Convert a grade from one system to another
+ * 
+ * @param grade - The grade value to convert
+ * @param fromSystem - The source grade system
+ * @param toSystem - The target grade system
+ * @returns The converted grade value
+ */
+export function convertGrade(grade: number, fromSystem: GradeSystem, toSystem: GradeSystem): number {
+  // If same system, no conversion needed
+  if (fromSystem === toSystem) return grade;
+  
+  // First, convert to a normalized 0-1 scale for easier mapping
+  let normalized: number;
+  
+  // Convert from source system to normalized 0-1 scale (0 = worst, 1 = best)
+  switch (fromSystem) {
+    case '1best':
+      // 1 is best, 6 is worst
+      normalized = 1 - ((grade - 1) / 5);
+      break;
+    case '6best':
+      // 6 is best, 1 is worst
+      normalized = (grade - 1) / 5;
+      break;
+    case 'american':
+      // A(4.0) is best, F(0) is worst
+      normalized = grade / 4.0;
+      break;
+    case 'gpa':
+      // 4.0 is best, 0.0 is worst
+      normalized = grade / 4.0;
+      break;
+    case 'percentage':
+      // 100% is best, 0% is worst
+      normalized = grade / 100;
+      break;
+    default:
+      normalized = (grade - 1) / 5; // Default to 6best scale
+  }
+  
+  // Clamp to 0-1 range
+  normalized = Math.max(0, Math.min(1, normalized));
+  
+  // Convert from normalized 0-1 scale to target system
+  switch (toSystem) {
+    case '1best':
+      // 1 is best, 6 is worst
+      return 1 + (5 * (1 - normalized));
+    case '6best':
+      // 6 is best, 1 is worst
+      return 1 + (5 * normalized);
+    case 'american':
+      // A(4.0) is best, F(0) is worst
+      return 4.0 * normalized;
+    case 'gpa':
+      // 4.0 is best, 0.0 is worst
+      return 4.0 * normalized;
+    case 'percentage':
+      // 100% is best, 0% is worst
+      return 100 * normalized;
+    default:
+      return 1 + (5 * normalized); // Default to 6best scale
   }
 }

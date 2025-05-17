@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-import { useGradeSystem, getGradeColor } from "@/hooks/use-grade-system";
+import { useGradeSystem, getGradeColor, convertGrade } from "@/hooks/use-grade-system";
 
 // Define types for the grade data
 interface Grade {
@@ -81,12 +81,21 @@ export default function Grades() {
       
     if (error) {
       console.error("Error fetching grades:", error);
-    } else if (gradesData) {
-      // Ensure all grades have a description (handle potential nulls/undefined)
-      const processedGrades = gradesData.map(grade => ({
-        ...grade,
-        description: grade.description || '' // Ensure description is never undefined
-      }));
+    } else if (gradesData) {      // Process grades - handle null/undefined descriptions and convert grades to current system
+      const standardGradeSystem = '6best' as const; // The system used for database storage
+      const processedGrades = gradesData.map(grade => {
+        // Convert the grade from the standard storage format to the current display format
+        const convertedGrade = convertGrade(grade.grade, standardGradeSystem, gradeSystem);
+        
+        return {
+          ...grade,
+          originalGrade: grade.grade, // Keep original for reference
+          grade: convertedGrade,      // Use the converted grade for display
+          description: grade.description || '' // Ensure description is never undefined
+        };
+      });
+      
+      console.log(`Converted ${processedGrades.length} grades from ${standardGradeSystem} to ${gradeSystem} format`);
       
       setGrades(processedGrades);
       
@@ -134,45 +143,132 @@ export default function Grades() {
     description: string;
   }) => {
     if (!user) return;
-    
-    if (editingGrade) {
-      // Update existing grade
-      const { error } = await supabase
-        .from('grades')
-        .update({
+      if (editingGrade) {
+      try {
+        // Log the data being sent to better debug
+        console.log("Updating grade data:", {
+          id: editingGrade.id,
           subject: gradeData.subject,
           grade: gradeData.grade,
           date: gradeData.date,
-          description: gradeData.description
-        })
-        .eq('id', editingGrade.id);
-      
-      if (error) {
-        console.error("Error updating grade:", error);
-      } else {
-        // Refresh grades list
-        fetchGrades(user.id);
+          description: gradeData.description,
+          gradeSystem // Log the current grade system for reference
+        });
+        
+        // Ensure grade is a valid number
+        const numericGrade = parseFloat(gradeData.grade.toString());
+        
+        if (isNaN(numericGrade)) {
+          throw new Error(`Invalid grade value: ${gradeData.grade}`);
+        }
+
+        // Convert the grade to a standard 1-6 scale for database storage
+        // This ensures consistent storage regardless of the display format
+        const standardGradeSystem = '6best' as const; // Use 6best as the standard storage format
+        const adjustedGrade = convertGrade(numericGrade, gradeSystem, standardGradeSystem);
+        
+        console.log(`Converting grade from ${gradeSystem} system: ${numericGrade} → ${standardGradeSystem} system: ${adjustedGrade}`);
+        
+        // Make sure the converted grade is valid
+        if (isNaN(adjustedGrade)) {
+          throw new Error(`Grade conversion resulted in invalid value: ${adjustedGrade}`);
+        }
+        
+        const { error, data } = await supabase
+          .from('grades')
+          .update({
+            subject: gradeData.subject,
+            grade: adjustedGrade,
+            date: gradeData.date,
+            description: gradeData.description
+          })
+          .eq('id', editingGrade.id)
+          .select();
+        
+        if (error) {
+          console.error("Database error updating grade:", {
+            error,
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          });
+          throw error;
+        } else {
+          console.log("Successfully updated grade:", data);
+          // Refresh grades list
+          fetchGrades(user.id);
+        }
+      } catch (err) {
+        console.error("Error updating grade:", err);
       }
       
       // Reset editing state
       setEditingGrade(null);
-    } else {
-      // Add new grade
-      const { error } = await supabase
-        .from('grades')
-        .insert([{
+    } else {      // Add new grade
+      try {
+        // Log the data being sent to better debug
+        console.log("Sending grade data:", {
           user_id: user.id,
           subject: gradeData.subject,
           grade: gradeData.grade,
           date: gradeData.date,
-          description: gradeData.description
-        }]);
-      
-      if (error) {
-        console.error("Error adding grade:", error);
-      } else {
-        // Refresh grades list
-        fetchGrades(user.id);
+          description: gradeData.description,
+          gradeSystem // Log the current grade system for reference
+        });
+        
+        // Ensure grade is a valid number
+        const numericGrade = parseFloat(gradeData.grade.toString());
+        
+        if (isNaN(numericGrade)) {
+          throw new Error(`Invalid grade value: ${gradeData.grade}`);
+        }
+        
+        // Convert the grade to a standard 1-6 scale for database storage
+        // This ensures consistent storage regardless of the display format
+        const standardGradeSystem = '6best' as const; // Use 6best as the standard storage format
+        const adjustedGrade = convertGrade(numericGrade, gradeSystem, standardGradeSystem);
+        
+        console.log(`Converting grade from ${gradeSystem} system: ${numericGrade} → ${standardGradeSystem} system: ${adjustedGrade}`);
+        
+        // Make sure the converted grade is valid
+        if (isNaN(adjustedGrade)) {
+          throw new Error(`Grade conversion resulted in invalid value: ${adjustedGrade}`);
+        }
+        
+        const { error, data } = await supabase
+          .from('grades')
+          .insert([{
+            user_id: user.id,
+            subject: gradeData.subject,
+            grade: adjustedGrade,
+            date: gradeData.date,
+            description: gradeData.description
+          }])
+          .select();
+        
+        if (error) {
+          console.error("Database error adding grade:", {
+            error,
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint
+          });
+          throw error;
+        } else {
+          console.log("Successfully added grade:", data);
+          // Refresh grades list
+          fetchGrades(user.id);
+        }} catch (err) {
+        // Provide more detailed error logging
+        console.error("Error adding grade:", {
+          error: err,
+          message: err instanceof Error ? err.message : 'Unknown error',
+          stack: err instanceof Error ? err.stack : 'No stack trace',
+          gradeData,
+          currentGradeSystem: gradeSystem
+        });
       }
     }
     

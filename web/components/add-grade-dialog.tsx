@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
+import { useGradeSystem, getGradeRange } from "@/hooks/use-grade-system";
 
 interface AddGradeProps {
   open: boolean;
@@ -56,41 +57,35 @@ export function AddGradeDialog({
   const [gradeInput, setGradeInput] = useState<string>("1");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
-  const [showCustomSubject, setShowCustomSubject] = useState(false);
-  // Use our centralized grade system utilities
-  const [gradeSystemState, setGradeSystemState] = useState('6best');
+  const [showCustomSubject, setShowCustomSubject] = useState(false);  // Use our centralized grade system hook
+  const { gradeSystem: gradeSystemState } = useGradeSystem();  // Use our imported getGradeRange utility
+  const gradeRangeInfo = getGradeRange(gradeSystemState);
+  const { min, max, step } = gradeRangeInfo;
   
-  // Get grade system from localStorage and listen for changes
-  useEffect(() => {
-    // Import the utility function dynamically to avoid SSR issues
-    import('@/utils/grade-settings').then(({ getGradeSystemSync }) => {
-      setGradeSystemState(getGradeSystemSync());
-      
-      // Listen for changes
-      const handleStorageChange = () => {
-        setGradeSystemState(getGradeSystemSync());
-      };
-      
-      window.addEventListener('storage', handleStorageChange);
-      return () => {
-        window.removeEventListener('storage', handleStorageChange);
-      };
-    });
-  }, []);
+  // Create a more descriptive label based on the grade system
+  let label = 'Grade';
+  switch (gradeSystemState) {
+    case '1best':
+      label = 'Grade (1-6, 1 is best)';
+      break;
+    case '6best':
+      label = 'Grade (1-6, 6 is best)';
+      break;
+    case 'american':
+      label = 'Grade (A-F, A=4.0, F=0)';
+      break;
+    case 'gpa':
+      label = 'GPA (0.0-4.0)';
+      break;
+    case 'percentage':
+      label = 'Percentage (0-100%)';
+      break;
+  }
 
-  // Get min/max for grade input based on system
-  const getGradeRange = () => {
-    if (gradeSystemState === '1best') {
-      return { min: 1, max: 6, label: 'Grade (1-6, 1 is best)' };
-    } else {
-      return { min: 1, max: 6, label: 'Grade (1-6, 6 is best)' };
-    }
-  };
-  const { min, max, label } = getGradeRange();
-
-  // Initialize form with editing grade data when available
+  // Initialize form with editing grade data when available  // Handle form initialization based on editing state and grade system
   useEffect(() => {
     if (editingGrade) {
+      // When editing an existing grade
       if (existingSubjects.includes(editingGrade.subject)) {
         setSubject(editingGrade.subject);
         setShowCustomSubject(false);
@@ -98,22 +93,35 @@ export function AddGradeDialog({
         setCustomSubject(editingGrade.subject);
         setShowCustomSubject(true);
       }
+      
+      // Set the grade value from the existing grade
       setGrade(editingGrade.grade);
       setGradeInput(editingGrade.grade.toString());
       setDate(editingGrade.date);
       setDescription(editingGrade.description || ''); // Added fallback for undefined
     } else {
-      // Reset form when not editing
+      // Reset form when not editing - use appropriate defaults for the current grade system
       setSubject("");
       setCustomSubject("");
-      setGrade(1);
-      setGradeInput("1");
+      
+      // Default to the middle of the grading scale based on the system
+      let defaultGrade = min;
+      if (gradeSystemState === 'percentage') {
+        defaultGrade = 75; // Default to C for percentage
+      } else if (gradeSystemState === 'american' || gradeSystemState === 'gpa') {
+        defaultGrade = 3.0; // Default to B for American/GPA
+      } else {
+        // For numeric systems (1-6), use appropriate default
+        defaultGrade = gradeSystemState === '1best' ? 2 : 5; // Good grade in respective system
+      }
+      
+      setGrade(defaultGrade);
+      setGradeInput(defaultGrade.toString());
       setDate(new Date().toISOString().split("T")[0]);
       setDescription("");
       setShowCustomSubject(false);
     }
-  }, [editingGrade, existingSubjects, open]);
-
+  }, [editingGrade, existingSubjects, open, min, max, gradeSystemState]);
   const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setGradeInput(value); // Always update the string value for the input
@@ -121,31 +129,67 @@ export function AddGradeDialog({
     // Only update the numeric value if it's valid
     const parsedValue = parseFloat(value);
     if (!isNaN(parsedValue)) {
-      setGrade(parsedValue);
+      // Clamp value to the min-max range for the current grade system
+      const clampedValue = Math.min(Math.max(parsedValue, min), max);
+      setGrade(clampedValue);
+      
+      // Log for debugging
+      if (clampedValue !== parsedValue) {
+        console.log(`Clamped grade value from ${parsedValue} to ${clampedValue}`);
+      }
+    } else {
+      console.warn("Invalid grade input:", value);
     }
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate grade is between min and max
-    const validatedGrade = Math.min(Math.max(grade, min), max);
-
-    onAddGrade({
-      subject: showCustomSubject ? customSubject : subject,
-      grade: validatedGrade,
-      date,
-      description,
-    });
-
-    // Reset form
-    setSubject("");
-    setCustomSubject("");
-    setGrade(1);
-    setGradeInput("1"); // Reset the input value too
-    setDate(new Date().toISOString().split("T")[0]);
-    setDescription("");
-    setShowCustomSubject(false);
+    
+    try {
+      // Check for required fields
+      const selectedSubject = showCustomSubject ? customSubject : subject;
+      if (!selectedSubject) {
+        alert("Please select or enter a subject");
+        return;
+      }
+      
+      // Validate grade is between min and max
+      let validatedGrade = grade;
+      if (isNaN(validatedGrade)) {
+        alert("Please enter a valid grade value");
+        return;
+      }
+      
+      // Ensure the grade is within the valid range for the current system
+      validatedGrade = Math.min(Math.max(validatedGrade, min), max);
+      
+      // Log what's being submitted for debugging
+      console.log("Submitting grade:", {
+        subject: selectedSubject,
+        grade: validatedGrade,
+        date,
+        description,
+        gradeSystem: gradeSystemState
+      });
+      
+      onAddGrade({
+        subject: selectedSubject,
+        grade: validatedGrade,
+        date,
+        description,
+      });
+  
+      // Reset form
+      setSubject("");
+      setCustomSubject("");
+      setGrade(min); // Reset to min value for the current system
+      setGradeInput(min.toString()); // Reset the input value too
+      setDate(new Date().toISOString().split("T")[0]);
+      setDescription("");
+      setShowCustomSubject(false);
+    } catch (error) {
+      console.error("Error in form submission:", error);
+      alert("There was an error submitting the grade. Please try again.");
+    }
   };
 
   return (
@@ -213,13 +257,12 @@ export function AddGradeDialog({
               )}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="grade">{label}</Label>
-              <Input
+              <Label htmlFor="grade">{label}</Label>              <Input
                 id="grade"
                 type="number"
                 min={min}
                 max={max}
-                step="0.1"
+                step={step.toString()}
                 value={gradeInput} // Use the string value for the input
                 onChange={handleGradeChange}
                 required

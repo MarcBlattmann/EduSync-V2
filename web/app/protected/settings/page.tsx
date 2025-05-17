@@ -14,7 +14,7 @@ import { Lock, Shield, CheckCircle2, UserCircle, Palette, Upload, Loader2 } from
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
-import { useGradeSystem } from "@/hooks/use-grade-system";
+import { useGradeSystem, GradeSystem } from "@/hooks/use-grade-system";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { v4 as uuidv4 } from 'uuid';
@@ -143,7 +143,7 @@ export default function Settings() {
       setSaveSuccess(false);
     }, 3000);
   };  // Save grade system to both localStorage and Supabase using our hook
-  const handleGradeSystemChange = async (newSystem: '6best' | '1best') => {
+  const handleGradeSystemChange = async (newSystem: GradeSystem) => {
     setIsSaving(true);
     
     try {
@@ -509,10 +509,9 @@ export default function Settings() {
                       Set your preferred grading system
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div>
+                  <CardContent className="space-y-6">                    <div>
                       <h4 className="font-medium mb-3">Grade System</h4>
-                      <div className="grid grid-cols-2 gap-3 max-w-xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-md">
                         <button
                           className={cn(
                             'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
@@ -535,8 +534,41 @@ export default function Settings() {
                           <span className="text-lg font-bold">1</span>
                           <span className="text-xs">1 is best</span>
                         </button>
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                            gradeSystem === 'american' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleGradeSystemChange('american')}
+                          type="button"
+                        >
+                          <span className="text-lg font-bold">A-F</span>
+                          <span className="text-xs">American</span>
+                        </button>
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                            gradeSystem === 'gpa' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleGradeSystemChange('gpa')}
+                          type="button"
+                        >
+                          <span className="text-lg font-bold">4.0</span>
+                          <span className="text-xs">GPA</span>
+                        </button>
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                            gradeSystem === 'percentage' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleGradeSystemChange('percentage')}
+                          type="button"
+                        >
+                          <span className="text-lg font-bold">%</span>
+                          <span className="text-xs">Percentage</span>
+                        </button>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">Choose which grade is considered the best for your system.</p>
+                      <p className="text-xs text-muted-foreground mt-2">Choose the grading system that matches your educational institution.</p>
                     </div>
                   </CardContent>                  <CardFooter className="border-t px-6 py-4 flex justify-between items-center">
                     {saveSuccess && activeTab === "system" && (

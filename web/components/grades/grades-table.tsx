@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, SortAsc, SortDesc, X, Pencil, Trash2 } from "lucide-react";
+import { useGradeSystem, formatGrade, getGradeColor } from "@/hooks/use-grade-system";
 
 // Grade interface
 interface Grade {
@@ -51,32 +52,17 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
     key: "date",
     direction: "desc",
   });
-  // Import grade system utilities
-  const [gradeSystemState, setGradeSystemState] = useState('6best');
   
-  // Get initial grade system and listen for changes
-  useEffect(() => {
-    // Import utilities dynamically to avoid SSR issues
-    const { getGradeSystemSync } = require('@/utils/grade-settings');
-    
-    // Set initial state
-    setGradeSystemState(getGradeSystemSync());
-    
-    // Listen for changes
-    const handleStorageChange = () => {
-      setGradeSystemState(getGradeSystemSync());
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+  // Use the grade system hook instead of manual state management
+  const { gradeSystem: gradeSystemState } = useGradeSystem();
   
-  const getGradeColor = (grade: number): string => {
-    // Import directly to use in render
-    const { getGradeColor } = require('@/utils/grade-settings');
-    return getGradeColor(grade, gradeSystemState as any);
+  // Helper functions to apply formatting and colors based on the grade system
+  const getGradeColorHelper = (grade: number): string => {
+    return getGradeColor(grade, gradeSystemState);
+  };
+  
+  const formatGradeHelper = (grade: number): string => {
+    return formatGrade(grade, gradeSystemState);
   };
 
   // Handle sorting
@@ -282,12 +268,11 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
                 </TableCell>
               </TableRow>
             ) : (
-              filteredGrades.map((grade) => (
-                <TableRow key={grade.id}>
+              filteredGrades.map((grade) => (                <TableRow key={grade.id}>
                   <TableCell className="font-medium">{grade.subject}</TableCell>
                   <TableCell className="text-center">
-                    <span className={`font-semibold ${getGradeColor(grade.grade)}`}>
-                      {grade.grade}
+                    <span className={`font-semibold ${getGradeColorHelper(grade.grade)}`}>
+                      {formatGradeHelper(grade.grade)}
                     </span>
                   </TableCell>
                   <TableCell>{formatDate(grade.date)}</TableCell>
