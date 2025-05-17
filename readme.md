@@ -1,4 +1,5 @@
-# EduSync 
+# ![EduSync ch (1)](https://github.com/user-attachments/assets/0502b9c1-e1c5-4465-a373-f124b957d0aa)
+
 
 EduSync is a user-friendly web app that helps students stay organized throughout the school year.
 
