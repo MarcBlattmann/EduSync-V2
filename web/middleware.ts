@@ -35,10 +35,13 @@ export async function middleware(request: NextRequest) {
     );
 
     // Refresh session if expired - required for Server Components
-    const user = await supabase.auth.getUser();
-
-    // Protected routes
+    const user = await supabase.auth.getUser();    // Protected routes
     if (request.nextUrl.pathname.startsWith("/protected") && user.error) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+    
+    // Redirect sign-up to sign-in since we only have Google authentication
+    if (request.nextUrl.pathname.startsWith("/sign-up")) {
       return NextResponse.redirect(new URL("/sign-in", request.url));
     }
 

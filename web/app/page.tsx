@@ -22,13 +22,9 @@ export default async function Home() {
                   <p className="max-w-[600px] text-gray-500 md:text-xl dark:text-gray-400">
                     Organize your academic schedule and track grades with our education management platform.
                   </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                </div>                <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Button asChild size="lg" className="px-8">
-                    <Link href="/sign-up">Get Started</Link>
-                  </Button>
-                  <Button asChild size="lg" variant="outline" className="px-8">
-                    <Link href="/sign-in">Log in</Link>
+                    <Link href="/sign-in">Sign in with Google</Link>
                   </Button>
                 </div>
               </div>

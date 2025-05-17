@@ -17,10 +17,9 @@ export function GoogleSignInButton() {
       setIsLoading(false);
     }
   };
-
   return (
     <Button
-      variant="outline"
+      variant="default"
       type="button"
       disabled={isLoading}
       onClick={handleSignIn}
