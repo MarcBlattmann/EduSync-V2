@@ -94,9 +94,10 @@ export function AddGradeDialog({
         setShowCustomSubject(true);
       }
       
-      // Set the grade value from the existing grade
-      setGrade(editingGrade.grade);
-      setGradeInput(editingGrade.grade.toString());
+      // Set the grade value from the existing grade - ensure proper decimal display
+      const roundedGrade = Math.round(editingGrade.grade * 100) / 100;
+      setGrade(roundedGrade);
+      setGradeInput(roundedGrade.toString());
       setDate(editingGrade.date);
       setDescription(editingGrade.description || ''); // Added fallback for undefined
     } else {
@@ -121,8 +122,7 @@ export function AddGradeDialog({
       setDescription("");
       setShowCustomSubject(false);
     }
-  }, [editingGrade, existingSubjects, open, min, max, gradeSystemState]);
-  const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  }, [editingGrade, existingSubjects, open, min, max, gradeSystemState]);  const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setGradeInput(value); // Always update the string value for the input
 
@@ -131,11 +131,14 @@ export function AddGradeDialog({
     if (!isNaN(parsedValue)) {
       // Clamp value to the min-max range for the current grade system
       const clampedValue = Math.min(Math.max(parsedValue, min), max);
-      setGrade(clampedValue);
+      
+      // Round to 2 decimal places for precision but no floating point errors
+      const roundedValue = Math.round(clampedValue * 100) / 100;
+      setGrade(roundedValue);
       
       // Log for debugging
       if (clampedValue !== parsedValue) {
-        console.log(`Clamped grade value from ${parsedValue} to ${clampedValue}`);
+        console.log(`Adjusted grade value from ${parsedValue} to ${roundedValue}`);
       }
     } else {
       console.warn("Invalid grade input:", value);
@@ -256,13 +259,13 @@ export function AddGradeDialog({
                 </div>
               )}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="grade">{label}</Label>              <Input
+            <div className="grid gap-2">              <Label htmlFor="grade">{label}</Label>
+              <Input
                 id="grade"
                 type="number"
                 min={min}
                 max={max}
-                step={step.toString()}
+                step={step.toString()} 
                 value={gradeInput} // Use the string value for the input
                 onChange={handleGradeChange}
                 required

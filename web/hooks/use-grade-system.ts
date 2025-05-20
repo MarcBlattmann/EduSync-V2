@@ -189,17 +189,17 @@ export function formatGrade(grade: number, system: GradeSystem): string {
 export function getGradeRange(system: GradeSystem): { min: number, max: number, step: number } {
   switch (system) {
     case '1best':
-      return { min: 1, max: 6, step: 1 };
+      return { min: 0, max: 6, step: 0.01 };
     case '6best':
-      return { min: 1, max: 6, step: 1 };
+      return { min: 0, max: 6, step: 0.01 };
     case 'american':
-      return { min: 0, max: 4, step: 0.3 }; // Step of 0.3 allows for +/- grades
+      return { min: 0, max: 4, step: 0.01 }; // More precise steps for flexibility
     case 'gpa':
-      return { min: 0, max: 4, step: 0.1 };
+      return { min: 0, max: 4, step: 0.01 };
     case 'percentage':
-      return { min: 0, max: 100, step: 1 };
+      return { min: 0, max: 100, step: 0.01 };
     default:
-      return { min: 1, max: 6, step: 1 };
+      return { min: 0, max: 6, step: 0.01 };
   }
 }
 
