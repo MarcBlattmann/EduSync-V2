@@ -19,21 +19,18 @@ const ThemeSwitcher = () => {
   }
 
   const ICON_SIZE = 16;
+  const isDark = theme === "dark";
 
   const toggleTheme = () => {
-    if (theme === "light") {
-      setTheme("dark");
-    } else {
-      setTheme("light");
-    }
+    setTheme(isDark ? "light" : "dark");
   };
 
   return (
     <Button variant="ghost" size={"sm"} onClick={toggleTheme}>
-      {theme === "light" ? (
-        <Sun key="light" size={ICON_SIZE} className={"text-muted-foreground"} />
+      {isDark ? (
+        <Sun key="sun" size={ICON_SIZE} className={"text-muted-foreground"} />
       ) : (
-        <Moon key="dark" size={ICON_SIZE} className={"text-muted-foreground"} />
+        <Moon key="moon" size={ICON_SIZE} className={"text-muted-foreground"} />
       )}
     </Button>
   );

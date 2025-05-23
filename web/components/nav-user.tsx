@@ -48,14 +48,21 @@ export function NavUser({
     avatar?: string
   }
 }) {
-  const { isMobile } = useSidebar()
-  const { theme, setTheme } = useTheme()
-  const router = useRouter()
-  const supabase = createClient()
+  const { isMobile } = useSidebar();
+  const { theme, setTheme } = useTheme();
+  const router = useRouter();
+  const supabase = createClient();
   const [user, setUser] = useState(initialUser || { name: "", email: "", avatar: "" })
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
   
-  const isDark = theme === "dark"
+  // Only determine theme after component has mounted to avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  // Only access theme after mounting to avoid hydration issues
+  const isDark = mounted && theme === "dark"
   
   const toggleTheme = () => {
     setTheme(isDark ? "light" : "dark")
@@ -155,14 +162,17 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem onClick={toggleTheme}>
-                {isDark ? (
-                  <Sun className="size-4 mr-2" />
-                ) : (
-                  <MoonIcon className="size-4 mr-2" />
-                )}
-                {isDark ? "Light" : "Dark"} Mode
+            <DropdownMenuGroup>              <DropdownMenuItem onClick={toggleTheme}>
+                {mounted ? (
+                  isDark ? (
+                    <Sun className="size-4 mr-2" />
+                  ) : (
+                    <MoonIcon className="size-4 mr-2" />
+                  )
+                ) : null}
+                {mounted ? 
+                  isDark ? "Switch to Light Mode" : "Switch to Dark Mode" 
+                : "Toggle Theme"}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={navigateToSettings}>
                 <Settings className="size-4 mr-2" />
