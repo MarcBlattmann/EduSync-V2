@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const segments = url.pathname.split('/');
   const shareCode = segments[segments.length - 1];
-  console.log(`Processing note share request for code: ${shareCode}`);
+  console.log(`Processing note share request for code: ${shareCode.slice(0, 4)}****`);
   const supabase = await createClient();
   
   if (!shareCode) {
