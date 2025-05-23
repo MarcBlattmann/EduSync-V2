@@ -18,7 +18,8 @@ import {
   Search,
   Menu,
   X,
-  ChevronLeft
+  ChevronLeft,
+  Share2
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -29,6 +30,7 @@ import { stripHtml } from "@/lib/notes-utils";
 import { NoteEditor } from "@/components/note-editor";
 import { NoteViewer } from "@/components/note-viewer";
 import { NoteToolbar } from "@/components/note-toolbar";
+import { ShareNoteDialog } from "@/components/share-note-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { NotesMobileProvider, useNotesMobile } from "./notes-mobile-context";
 import { MobileSidebar } from "./mobile-sidebar";
@@ -103,6 +105,7 @@ function NotesContent() {
   const [createFolderDialogOpen, setCreateFolderDialogOpen] = useState(false);
   const [createNoteDialogOpen, setCreateNoteDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [shareNoteDialogOpen, setShareNoteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'note' | 'folder', id: string } | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [newNoteName, setNewNoteName] = useState('');
@@ -567,7 +570,6 @@ function NotesContent() {
                                 <Pencil className="h-4 w-4 mr-2" />
                                 <span>Edit</span>
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -578,6 +580,15 @@ function NotesContent() {
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 <span>Delete</span>
+                              </DropdownMenuItem>                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedNote(note);
+                                  setShareNoteDialogOpen(true);
+                                }}
+                              >
+                                <Share2 className="h-4 w-4 mr-2" />
+                                <span>Share</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -798,21 +809,30 @@ function NotesContent() {
                           in {folders.find(f => f.id === selectedNote.folder_id)?.name || 'Unknown Folder'}
                         </span>
                       )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-2 sm:mt-0">                      {editMode ? (
+                    </div>                    <div className="flex items-center gap-2 mt-2 sm:mt-0">                      {editMode ? (
                         <Button size="sm" onClick={saveNote}>Save</Button>
                       ) : (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => {
-                            console.log("Switching to edit mode (desktop), content:", selectedNote.content);
-                            setNoteContent(selectedNote.content);
-                            setEditMode(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
+                        <>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => {
+                              console.log("Switching to edit mode (desktop), content:", selectedNote.content);
+                              setNoteContent(selectedNote.content);
+                              setEditMode(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShareNoteDialogOpen(true)}
+                          >
+                            <Share2 className="h-4 w-4 mr-1" />
+                            <span className="hidden sm:inline">Share</span>
+                          </Button>
+                        </>
                       )}
                       <Button 
                         size="sm" 
@@ -847,9 +867,8 @@ function NotesContent() {
                       )}
                     </>
                   ) : (                    <div className="p-3 md:p-4">
-                      <NoteViewer content={selectedNote.content} className="h-full" />
-                      {isMobile && (
-                        <div className="p-2 flex justify-end border-t sticky bottom-0 bg-background">
+                      <NoteViewer content={selectedNote.content} className="h-full" />                      {isMobile && (
+                        <div className="p-2 flex justify-end gap-2 border-t sticky bottom-0 bg-background">
                           <Button 
                             size="sm" 
                             variant="outline" 
@@ -860,6 +879,14 @@ function NotesContent() {
                             }}
                           >
                             Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShareNoteDialogOpen(true)}
+                          >
+                            <Share2 className="h-4 w-4 mr-1" />
+                            Share
                           </Button>
                         </div>
                       )}
@@ -955,6 +982,16 @@ function NotesContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Share Note Dialog */}
+      {selectedNote && (
+        <ShareNoteDialog
+          open={shareNoteDialogOpen}
+          onOpenChange={setShareNoteDialogOpen}
+          noteId={selectedNote.id}
+          noteTitle={selectedNote.title}
+        />
+      )}
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
