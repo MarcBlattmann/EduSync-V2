@@ -3,7 +3,7 @@ import { createClient } from './supabase/client';
 /**
  * Grade system types supported by the application
  */
-export type GradeSystem = '6best' | '1best' | 'american' | 'gpa' | 'percentage';
+export type GradeSystem = '6best' | '1best' | 'american' | 'gpa' | 'percentage' | 'ib';
 
 /**
  * Get the user's preferred grade system from their Supabase metadata or localStorage
@@ -30,7 +30,7 @@ export async function getUserGradeSystem(): Promise<GradeSystem> {
       const localGradeSystem = localStorage.getItem('gradeSystem');
       if (localGradeSystem === '1best' || localGradeSystem === '6best' || 
           localGradeSystem === 'american' || localGradeSystem === 'gpa' || 
-          localGradeSystem === 'percentage') {
+          localGradeSystem === 'percentage' || localGradeSystem === 'ib') {
         // If we found it in localStorage but not in Supabase, try to save it to Supabase
         if (user) {
           try {
@@ -108,12 +108,13 @@ export async function saveGradeSystemToSupabase(system: GradeSystem): Promise<bo
  * @param system - Grade system to use for comparison ('6best' or '1best')
  * @returns Boolean - true if grade1 is better than grade2
  */
-export function isBetterGrade(grade1: number, grade2: number, system: GradeSystem): boolean {
-  if (system === '6best') {
-    return grade1 > grade2; // In 6best system, higher numbers are better
-  } else {
-    return grade1 < grade2; // In 1best system, lower numbers are better
-  }
+export function isBetterGrade(grade1: number, grade2: number, system: GradeSystem): boolean {    if (system === '6best') {
+      return grade1 > grade2; // In 6best system, higher numbers are better
+    } else if (system === 'ib') {
+      return grade1 > grade2; // In IB system, higher numbers are better (7 is best)
+    } else {
+      return grade1 < grade2; // In 1best system, lower numbers are better
+    }
 }
 
 /**
@@ -123,10 +124,9 @@ export function isBetterGrade(grade1: number, grade2: number, system: GradeSyste
  * @param system - Grade system to use for sorting ('6best' or '1best')
  * @returns number[] - Sorted array of grades (best first)
  */
-export function sortGradesBySystem(grades: number[], system: GradeSystem): number[] {
-  return [...grades].sort((a, b) => {
-    if (system === '6best') {
-      return b - a; // Descending for 6best (higher is better)
+export function sortGradesBySystem(grades: number[], system: GradeSystem): number[] {  return [...grades].sort((a, b) => {
+    if (system === '6best' || system === 'ib') {
+      return b - a; // Descending for 6best and IB (higher is better)
     } else {
       return a - b; // Ascending for 1best (lower is better)
     }
@@ -142,7 +142,8 @@ export function sortGradesBySystem(grades: number[], system: GradeSystem): numbe
 export function getGradeSystemSync(): GradeSystem {
   if (typeof window !== 'undefined') {
     const system = localStorage.getItem('gradeSystem');
-    if (system === '1best' || system === '6best') {
+    if (system === '1best' || system === '6best' || system === 'american' || 
+        system === 'gpa' || system === 'percentage' || system === 'ib') {
       return system;
     }
   }
@@ -158,10 +159,13 @@ export function getGradeSystemSync(): GradeSystem {
  */
 export function getGradeColor(grade: number, system?: GradeSystem): string {
   const gradeSystem = system || getGradeSystemSync();
-  
-  if (gradeSystem === '1best') {
+    if (gradeSystem === '1best') {
     if (grade <= 2) return "text-green-600 dark:text-green-400";
     if (grade <= 4) return "text-orange-500 dark:text-orange-300";
+    return "text-red-600 dark:text-red-400";
+  } else if (gradeSystem === 'ib') {
+    if (grade >= 6) return "text-green-600 dark:text-green-400";
+    if (grade >= 4) return "text-orange-500 dark:text-orange-300";
     return "text-red-600 dark:text-red-400";
   } else {
     if (grade >= 5) return "text-green-600 dark:text-green-400";

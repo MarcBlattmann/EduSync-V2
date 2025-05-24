@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
-export type GradeSystem = '6best' | '1best' | 'american' | 'gpa' | 'percentage';
+export type GradeSystem = '6best' | '1best' | 'american' | 'gpa' | 'percentage' | 'ib';
 
 /**
  * React hook that manages grade system state and syncs between localStorage and Supabase
@@ -14,8 +14,7 @@ export function useGradeSystem() {
   // Initialize with default or localStorage value
   const [gradeSystem, setGradeSystemState] = useState<GradeSystem>(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('gradeSystem');
-      return (stored === '1best' || stored === '6best' || stored === 'american' || stored === 'gpa' || stored === 'percentage') 
+      const stored = localStorage.getItem('gradeSystem');      return (stored === '1best' || stored === '6best' || stored === 'american' || stored === 'gpa' || stored === 'percentage' || stored === 'ib') 
         ? stored 
         : '6best';
     }
@@ -106,6 +105,12 @@ export function getGradeColor(grade: number, system: GradeSystem): string {
       if (grade <= 4) return "text-orange-500 dark:text-orange-300";
       return "text-red-600 dark:text-red-400";
     
+    case 'ib':
+      // IB system: 1-7, 7 is best
+      if (grade >= 6) return "text-green-600 dark:text-green-400";      // Excellent (6-7)
+      if (grade >= 4) return "text-orange-500 dark:text-orange-300";    // Good (4-5)
+      return "text-red-600 dark:text-red-400";                         // Needs improvement (1-3)
+    
     case 'american':
       // American letter grade system (A=4.0, B=3.0, etc.)
       if (grade >= 4) return "text-green-600 dark:text-green-400";      // A (4.0-3.7)
@@ -172,6 +177,10 @@ export function formatGrade(grade: number, system: GradeSystem): string {
       // Format as percentage
       return `${Math.round(grade)}%`;
     
+    case 'ib':
+      // IB grades are whole numbers from 1-7
+      return Math.round(grade).toString();
+    
     case '6best':
     case '1best':
     default:
@@ -192,6 +201,8 @@ export function getGradeRange(system: GradeSystem): { min: number, max: number, 
       return { min: 0, max: 6, step: 0.01 };
     case '6best':
       return { min: 0, max: 6, step: 0.01 };
+    case 'ib':
+      return { min: 1, max: 7, step: 0.01 };
     case 'american':
       return { min: 0, max: 4, step: 0.01 }; // More precise steps for flexibility
     case 'gpa':
@@ -217,8 +228,7 @@ export function convertGrade(grade: number, fromSystem: GradeSystem, toSystem: G
   
   // First, convert to a normalized 0-1 scale for easier mapping
   let normalized: number;
-  
-  // Convert from source system to normalized 0-1 scale (0 = worst, 1 = best)
+    // Convert from source system to normalized 0-1 scale (0 = worst, 1 = best)
   switch (fromSystem) {
     case '1best':
       // 1 is best, 6 is worst
@@ -227,6 +237,10 @@ export function convertGrade(grade: number, fromSystem: GradeSystem, toSystem: G
     case '6best':
       // 6 is best, 1 is worst
       normalized = (grade - 1) / 5;
+      break;
+    case 'ib':
+      // IB: 7 is best, 1 is worst
+      normalized = (grade - 1) / 6;
       break;
     case 'american':
       // A(4.0) is best, F(0) is worst
@@ -246,8 +260,7 @@ export function convertGrade(grade: number, fromSystem: GradeSystem, toSystem: G
   
   // Clamp to 0-1 range
   normalized = Math.max(0, Math.min(1, normalized));
-  
-  // Convert from normalized 0-1 scale to target system
+    // Convert from normalized 0-1 scale to target system
   switch (toSystem) {
     case '1best':
       // 1 is best, 6 is worst
@@ -255,6 +268,9 @@ export function convertGrade(grade: number, fromSystem: GradeSystem, toSystem: G
     case '6best':
       // 6 is best, 1 is worst
       return 1 + (5 * normalized);
+    case 'ib':
+      // IB: 7 is best, 1 is worst
+      return 1 + (6 * normalized);
     case 'american':
       // A(4.0) is best, F(0) is worst
       return 4.0 * normalized;
