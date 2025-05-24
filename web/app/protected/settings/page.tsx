@@ -27,10 +27,7 @@ export default function Settings() {
   const [avatar, setAvatar] = useState("");
   const [activeTab, setActiveTab] = useState("profile");
   const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [passwordCurrent, setPasswordCurrent] = useState("");
-  const [passwordNew, setPasswordNew] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");  // Use the grade system hook instead of local state
+  const [saveSuccess, setSaveSuccess] = useState(false);// Use the grade system hook instead of local state
   const { gradeSystem, setGradeSystem, isLoading: isGradeSystemLoading } = useGradeSystem();
 
   const router = useRouter();
@@ -98,41 +95,6 @@ export default function Settings() {
     }
   };
   
-  const handlePasswordChange = async () => {
-    if (!passwordNew || passwordNew !== passwordConfirm) {
-      alert("Passwords do not match");
-      return;
-    }
-    
-    setIsSaving(true);
-    
-    try {
-      const { error } = await supabase.auth.updateUser({ 
-        password: passwordNew 
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Reset password fields
-      setPasswordCurrent("");
-      setPasswordNew("");
-      setPasswordConfirm("");
-      
-      setSaveSuccess(true);
-      
-      // Reset success message after 3 seconds
-      setTimeout(() => {
-        setSaveSuccess(false);
-      }, 3000);
-    } catch (error) {
-      console.error("Error changing password:", error);
-      alert("Failed to change password");
-    } finally {
-      setIsSaving(false);
-    }
-  };
   
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
@@ -172,12 +134,11 @@ export default function Settings() {
       label: "Profile", 
       icon: <UserCircle className="h-4 w-4 mr-2" />,
       description: "Manage your personal information"
-    },
-    { 
+    },    { 
       id: "security", 
       label: "Security", 
       icon: <Lock className="h-4 w-4 mr-2" />,
-      description: "Update password and security settings" 
+      description: "Security settings and two-factor authentication" 
     },
     { 
       id: "appearance", 
@@ -254,17 +215,8 @@ export default function Settings() {
                       {item.icon}
                       {item.label}
                     </button>
-                  ))}
-                </nav>
+                  ))}                </nav>
               </CardContent>
-              <CardFooter className="p-4 pt-2 border-t flex justify-between items-center">
-                <div className="text-xs text-muted-foreground">
-                  EduSync v2.0
-                </div>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
-                  <Link href="/protected">Back</Link>
-                </Button>
-              </CardFooter>
             </Card>
           </div>
           
@@ -336,77 +288,9 @@ export default function Settings() {
                 </Card>
               </div>
             )}
-            
-            {/* Security Settings */}
+              {/* Security Settings */}
             {activeTab === "security" && (
               <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <Lock className="h-5 w-5 text-primary" />
-                      <CardTitle>Password</CardTitle>
-                    </div>
-                    <CardDescription>
-                      Change your password to keep your account secure
-                    </CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Current Password</Label>
-                      <Input 
-                        id="currentPassword" 
-                        type="password" 
-                        value={passwordCurrent}
-                        onChange={(e) => setPasswordCurrent(e.target.value)}
-                        className="max-w-md"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="newPassword">New Password</Label>
-                      <Input 
-                        id="newPassword" 
-                        type="password"
-                        value={passwordNew}
-                        onChange={(e) => setPasswordNew(e.target.value)}
-                        className="max-w-md"
-                      />
-                      <p className="text-xs text-muted-foreground">Password must be at least 8 characters long.</p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <Input 
-                        id="confirmPassword" 
-                        type="password"
-                        value={passwordConfirm}
-                        onChange={(e) => setPasswordConfirm(e.target.value)}
-                        className="max-w-md"
-                      />
-                    </div>
-                  </CardContent>
-                  
-                  <CardFooter className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4 border-t px-6 py-4">
-                    {saveSuccess && activeTab === "security" && (
-                      <div className="flex items-center text-green-600 dark:text-green-400">
-                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                        <span className="text-sm">Password changed successfully</span>
-                      </div>
-                    )}
-                    <Button 
-                      disabled={isSaving} 
-                      onClick={handlePasswordChange}
-                      className={cn(
-                        "sm:ml-auto",
-                        saveSuccess && activeTab === "security" ? "bg-green-600 hover:bg-green-700" : ""
-                      )}
-                    >
-                      {isSaving ? "Updating..." : "Update Password"}
-                    </Button>
-                  </CardFooter>
-                </Card>
-                
                 <Card>
                   <CardHeader>
                     <div className="flex items-center gap-2">
