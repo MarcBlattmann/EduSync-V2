@@ -425,9 +425,8 @@ export default function Grades() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={prepareChartData()}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                      <YAxis
-                        domain={gradeSystem === '1best' ? [1, 6] : [1, 6]}
+                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />                      <YAxis
+                        domain={gradeSystem === '1best' ? [1, 6] : gradeSystem === 'ib' ? [1, 7] : [1, 6]}
                         reversed={gradeSystem === '1best'}
                         tick={{ fontSize: 12 }}
                       />

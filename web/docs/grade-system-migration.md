@@ -4,11 +4,19 @@ This guide explains how grade system preferences are now stored in the applicati
 
 ## Overview of the Changes
 
-Grade system settings (like '6best' or '1best') are now stored in:
+Grade system settings are now stored in:
 
 1. **User metadata in Supabase**: For cross-device persistence
 2. **LocalStorage**: For immediate access without network requests
 3. **React state**: For UI updates
+
+**Supported Grade Systems:**
+- **6best**: Traditional 1-6 scale where 6 is the best grade
+- **1best**: Swiss-style 1-6 scale where 1 is the best grade  
+- **IB**: International Baccalaureate 1-7 scale where 7 is the best grade
+- **American**: Letter grades (A-F) with GPA values
+- **GPA**: 0.0-4.0 Grade Point Average
+- **Percentage**: 0-100% scale
 
 ## New Files Added
 
@@ -32,7 +40,7 @@ import { useGradeSystem } from "@/hooks/use-grade-system";
 function SettingsComponent() {
   const { gradeSystem, setGradeSystem, isLoading } = useGradeSystem();
   
-  const handleGradeSystemChange = async (newSystem: '6best' | '1best') => {
+  const handleGradeSystemChange = async (newSystem: '6best' | '1best' | 'ib') => {
     await setGradeSystem(newSystem);
     // Success message, etc.
   };
@@ -53,6 +61,14 @@ function SettingsComponent() {
         onClick={() => handleGradeSystemChange('1best')}
       >
         1 is best
+      </button>
+      
+      {/* Button for IB */}
+      <button 
+        className={gradeSystem === 'ib' ? 'active' : ''}
+        onClick={() => handleGradeSystemChange('ib')}
+      >
+        IB (1-7)
       </button>
     </div>
   );
@@ -95,6 +111,8 @@ function GradeInputComponent() {
   const getGradeRange = () => {
     if (gradeSystem === '1best') {
       return { min: 1, max: 6, label: 'Grade (1-6, 1 is best)' };
+    } else if (gradeSystem === 'ib') {
+      return { min: 1, max: 7, label: 'Grade (1-7, 7 is best)' };
     } else {
       return { min: 1, max: 6, label: 'Grade (1-6, 6 is best)' };
     }

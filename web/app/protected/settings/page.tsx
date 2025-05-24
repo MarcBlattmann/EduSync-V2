@@ -511,7 +511,7 @@ export default function Settings() {
                   </CardHeader>
                   <CardContent className="space-y-6">                    <div>
                       <h4 className="font-medium mb-3">Grade System</h4>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-md">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl">
                         <button
                           className={cn(
                             'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
@@ -533,6 +533,17 @@ export default function Settings() {
                         >
                           <span className="text-lg font-bold">1</span>
                           <span className="text-xs">1 is best</span>
+                        </button>
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                            gradeSystem === 'ib' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleGradeSystemChange('ib')}
+                          type="button"
+                        >
+                          <span className="text-lg font-bold">7</span>
+                          <span className="text-xs">IB (1-7)</span>
                         </button>
                         <button
                           className={cn(

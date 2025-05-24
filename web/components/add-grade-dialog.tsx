@@ -63,13 +63,15 @@ export function AddGradeDialog({
   const { min, max, step } = gradeRangeInfo;
   
   // Create a more descriptive label based on the grade system
-  let label = 'Grade';
-  switch (gradeSystemState) {
+  let label = 'Grade';  switch (gradeSystemState) {
     case '1best':
       label = 'Grade (1-6, 1 is best)';
       break;
     case '6best':
       label = 'Grade (1-6, 6 is best)';
+      break;
+    case 'ib':
+      label = 'Grade (1-7, 7 is best)';
       break;
     case 'american':
       label = 'Grade (A-F, A=4.0, F=0)';
@@ -106,11 +108,12 @@ export function AddGradeDialog({
       setCustomSubject("");
       
       // Default to the middle of the grading scale based on the system
-      let defaultGrade = min;
-      if (gradeSystemState === 'percentage') {
+      let defaultGrade = min;      if (gradeSystemState === 'percentage') {
         defaultGrade = 75; // Default to C for percentage
       } else if (gradeSystemState === 'american' || gradeSystemState === 'gpa') {
         defaultGrade = 3.0; // Default to B for American/GPA
+      } else if (gradeSystemState === 'ib') {
+        defaultGrade = 5; // Default to good grade in IB system
       } else {
         // For numeric systems (1-6), use appropriate default
         defaultGrade = gradeSystemState === '1best' ? 2 : 5; // Good grade in respective system
