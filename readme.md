@@ -4,9 +4,9 @@
 
 ### *Your academic life, organized.*
 
-</div>
 
 EduSync is a user-friendly web app that helps students stay organized throughout the school year.
+</div>
 
 ---
 
