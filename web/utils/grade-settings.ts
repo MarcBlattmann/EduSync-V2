@@ -27,7 +27,8 @@ export async function getUserGradeSystem(): Promise<GradeSystem> {
     }
       // If not available in user metadata or user not logged in, check localStorage
     if (typeof window !== 'undefined') {
-      const localGradeSystem = localStorage.getItem('gradeSystem');      if (localGradeSystem === '1best' || localGradeSystem === '6best' || 
+      const localGradeSystem = localStorage.getItem('gradeSystem');
+      if (localGradeSystem === '1best' || localGradeSystem === '6best' || 
           localGradeSystem === 'american' || localGradeSystem === 'gpa' || 
           localGradeSystem === 'percentage' || localGradeSystem === 'ib') {
         // If we found it in localStorage but not in Supabase, try to save it to Supabase
