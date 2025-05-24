@@ -27,8 +27,8 @@ export default function Settings() {
   const [avatar, setAvatar] = useState("");
   const [activeTab, setActiveTab] = useState("profile");
   const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);// Use the grade system hook instead of local state
-  const { gradeSystem, setGradeSystem, isLoading: isGradeSystemLoading } = useGradeSystem();
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const { gradeSystem, setGradeSystem, isLoading: isGradeSystemLoading } = useGradeSystem(); // Use the grade system hook instead of local state
 
   const router = useRouter();
   const supabase = createClient();
