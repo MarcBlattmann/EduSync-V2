@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, SortAsc, SortDesc, X, Pencil, Trash2 } from "lucide-react";
 import { useGradeSystem, formatGrade, getGradeColor } from "@/hooks/use-grade-system";
-import { useDisplayPreferences, convertGradeForDisplay } from "@/hooks/use-display-preferences";
 
 // Grade interface
 interface Grade {
