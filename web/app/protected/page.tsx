@@ -10,6 +10,8 @@ import { UpcomingEvents } from "@/components/upcoming-events";
 import { Suspense, useEffect, useState } from "react";
 import { CalendarIcon, GraduationCapIcon } from "lucide-react";
 import Link from "next/link";
+import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
+import { useGradeSystem } from "@/hooks/use-grade-system";
 
 // Define types for the grade data
 interface Grade {
@@ -66,6 +68,8 @@ function GradeStats({ userId }: { userId: string }) {
   const [gradeStats, setGradeStats] = useState<GradeStats | null>(null);
   const [error, setError] = useState(false);
   const [summaryData, setSummaryData] = useState<GradeSummary[]>([]);
+  const { displayLabel } = useDisplayPreferences();
+  const { gradeSystem } = useGradeSystem();
   
   useEffect(() => {
     async function fetchGradeStats() {
@@ -135,12 +139,11 @@ function GradeStats({ userId }: { userId: string }) {
               </div>
             </Link>
           ) : (
-            <>
-              <div className="flex justify-between items-center mb-4">
+            <>              <div className="flex justify-between items-center mb-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Average Grade</p>
+                  <p className="text-sm text-muted-foreground">{getDisplayLabel(displayLabel)}</p>
                   <div className={`text-3xl font-bold ${getGradeColor(gradeStats.average_grade)}`}>
-                    {gradeStats.average_grade.toFixed(2)}
+                    {convertGradeForDisplay(gradeStats.average_grade, gradeSystem, displayLabel).toFixed(2)}
                   </div>
                 </div>
                 <div>
@@ -155,12 +158,11 @@ function GradeStats({ userId }: { userId: string }) {
                   <div className="space-y-1">
                     {Object.entries(gradeStats.subject_averages)
                       .sort(([, a], [, b]) => b - a)
-                      .slice(0, 3)
-                      .map(([subject, average]) => (
+                      .slice(0, 3)                      .map(([subject, average]) => (
                         <div key={subject} className="flex justify-between items-center">
                           <span className="font-medium truncate mr-2">{subject}</span>
                           <span className={`font-semibold ${getGradeColor(average)}`}>
-                            {typeof average === 'number' ? average.toFixed(2) : average}
+                            {convertGradeForDisplay(average, gradeSystem, displayLabel).toFixed(2)}
                           </span>
                         </div>
                       ))}
@@ -223,12 +225,11 @@ function GradeStats({ userId }: { userId: string }) {
         <CardTitle>Grade Overview</CardTitle>
         <CardDescription>Your current academic performance</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col pb-6">
-        <div className="flex justify-between items-center mb-4">
+      <CardContent className="flex-grow flex flex-col pb-6">        <div className="flex justify-between items-center mb-4">
           <div>
-            <p className="text-sm text-muted-foreground">Average Grade</p>
+            <p className="text-sm text-muted-foreground">{getDisplayLabel(displayLabel)}</p>
             <div className={`text-3xl font-bold ${getGradeColor(averageGrade)}`}>
-              {averageGrade}
+              {convertGradeForDisplay(averageGrade, gradeSystem, displayLabel).toFixed(2)}
             </div>
           </div>
           <div>
@@ -243,12 +244,11 @@ function GradeStats({ userId }: { userId: string }) {
             <div className="space-y-1">
               {Object.entries(subjectAverages)
                 .sort(([, a], [, b]) => b - a)
-                .slice(0, 3)
-                .map(([subject, average]) => (
+                .slice(0, 3)                .map(([subject, average]) => (
                   <div key={subject} className="flex justify-between items-center">
                     <span className="font-medium truncate mr-2">{subject}</span>
                     <span className={`font-semibold ${getGradeColor(average)}`}>
-                      {average}
+                      {convertGradeForDisplay(average, gradeSystem, displayLabel).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -332,13 +332,12 @@ function GradeStatsLoading() {
         <CardTitle>Grade Overview</CardTitle>
         <CardDescription>Your current academic performance</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col pb-6">
-        <div className="animate-pulse">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Average Grade</p>
-              <div className="h-8 w-16 bg-muted rounded-md"></div>
-            </div>
+      <CardContent className="flex-grow flex flex-col pb-6">          <div className="animate-pulse">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <p className="text-sm text-muted-foreground">{getDisplayLabel('averageGrade')}</p>
+                <div className="h-8 w-16 bg-muted rounded-md"></div>
+              </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Entries</p>
               <div className="h-8 w-16 bg-muted rounded-md"></div>

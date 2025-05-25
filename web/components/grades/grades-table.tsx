@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, SortAsc, SortDesc, X, Pencil, Trash2 } from "lucide-react";
 import { useGradeSystem, formatGrade, getGradeColor } from "@/hooks/use-grade-system";
+import { useDisplayPreferences, convertGradeForDisplay } from "@/hooks/use-display-preferences";
 
 // Grade interface
 interface Grade {
@@ -52,9 +53,9 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
     key: "date",
     direction: "desc",
   });
-  
   // Use the grade system hook instead of manual state management
   const { gradeSystem: gradeSystemState } = useGradeSystem();
+  const { displayLabel } = useDisplayPreferences();
   
   // Helper functions to apply formatting and colors based on the grade system
   const getGradeColorHelper = (grade: number): string => {
@@ -62,6 +63,7 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
   };
   
   const formatGradeHelper = (grade: number): string => {
+    // Individual grades should always show in their original format, not converted to GPA
     return formatGrade(grade, gradeSystemState);
   };
 
