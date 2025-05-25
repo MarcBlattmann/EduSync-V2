@@ -3,12 +3,12 @@
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 
-type GradeSystem = '6best' | '1best' | 'american' | 'gpa' | 'percentage' | 'ib';
+type GradeSystem = '6best' | '1best' | 'american' | 'percentage' | 'ib';
 
 /**
  * Server action to save grade system preference to Supabase user metadata
  * 
- * @param system The grade system to save ('6best', '1best', 'american', 'gpa', 'percentage', 'ib')
+ * @param system The grade system to save ('6best', '1best', 'american', 'percentage', 'ib')
  * @returns Object with success status and any error message
  */
 export async function saveGradeSystemToSupabase(system: GradeSystem): Promise<{ 

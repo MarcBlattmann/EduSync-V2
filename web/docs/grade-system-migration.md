@@ -14,8 +14,7 @@ Grade system settings are now stored in:
 - **6best**: Traditional 1-6 scale where 6 is the best grade
 - **1best**: Swiss-style 1-6 scale where 1 is the best grade  
 - **IB**: International Baccalaureate 1-7 scale where 7 is the best grade
-- **American**: Letter grades (A-F) with GPA values
-- **GPA**: 0.0-4.0 Grade Point Average
+- **American**: Letter grades (A-F) with 4.0 scale values
 - **Percentage**: 0-100% scale
 
 ## New Files Added

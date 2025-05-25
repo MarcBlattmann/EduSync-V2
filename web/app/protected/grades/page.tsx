@@ -425,12 +425,11 @@ export default function Grades() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={prepareChartData()}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />                                            <YAxis
-                        domain={
+                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />                                            <YAxis                        domain={
                           gradeSystem === '1best' ? [1, 6] :
                           gradeSystem === 'ib' ? [1, 7] :
                           gradeSystem === 'percentage' ? [0, 100] :
-                          gradeSystem === 'gpa' ? [0, 4] :
+                          gradeSystem === 'american' ? [0, 4] :
                           [1, 6] // Default fallback
                         }
                         reversed={gradeSystem === '1best'}

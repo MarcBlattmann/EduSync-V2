@@ -72,12 +72,8 @@ export function AddGradeDialog({
       break;
     case 'ib':
       label = 'Grade (1-7, 7 is best)';
-      break;
-    case 'american':
+      break;    case 'american':
       label = 'Grade (A-F, A=4.0, F=0)';
-      break;
-    case 'gpa':
-      label = 'GPA (0.0-4.0)';
       break;
     case 'percentage':
       label = 'Percentage (0-100%)';
@@ -110,8 +106,8 @@ export function AddGradeDialog({
       // Default to the middle of the grading scale based on the system
       let defaultGrade = min;      if (gradeSystemState === 'percentage') {
         defaultGrade = 75; // Default to C for percentage
-      } else if (gradeSystemState === 'american' || gradeSystemState === 'gpa') {
-        defaultGrade = 3.0; // Default to B for American/GPA
+      } else if (gradeSystemState === 'american') {
+        defaultGrade = 3.0; // Default to B for American
       } else if (gradeSystemState === 'ib') {
         defaultGrade = 5; // Default to good grade in IB system
       } else {

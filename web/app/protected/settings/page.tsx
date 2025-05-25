@@ -437,19 +437,7 @@ export default function Settings() {
                           onClick={() => handleGradeSystemChange('american')}
                           type="button"
                         >
-                          <span className="text-lg font-bold">A-F</span>
-                          <span className="text-xs">American</span>
-                        </button>
-                        <button
-                          className={cn(
-                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
-                            gradeSystem === 'gpa' ? 'border-primary bg-accent/50' : ''
-                          )}
-                          onClick={() => handleGradeSystemChange('gpa')}
-                          type="button"
-                        >
-                          <span className="text-lg font-bold">4.0</span>
-                          <span className="text-xs">GPA</span>
+                          <span className="text-lg font-bold">A-F</span>                        <span className="text-xs">American</span>
                         </button>
                         <button
                           className={cn(
