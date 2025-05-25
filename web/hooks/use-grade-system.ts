@@ -14,9 +14,11 @@ export function useGradeSystem() {
   // Initialize with default or localStorage value
   const [gradeSystem, setGradeSystemState] = useState<GradeSystem>(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('gradeSystem');      return (stored === '1best' || stored === '6best' || stored === 'american' || stored === 'percentage' || stored === 'ib') 
-        ? stored 
-        : '6best';
+      const stored = localStorage.getItem('gradeSystem');
+      if (stored === '1best' || stored === '6best' || stored === 'american' || stored === 'percentage' || stored === 'ib') {
+        return stored;
+      }
+      return '6best';
     }
     return '6best';
   });
