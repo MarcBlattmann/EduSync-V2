@@ -22,6 +22,7 @@ import {
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useGradeSystem, getGradeColor, convertGrade } from "@/hooks/use-grade-system";
+import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
 
 // Define types for the grade data
 interface Grade {
@@ -46,9 +47,9 @@ export default function Grades() {
   const [editingGrade, setEditingGrade] = useState<Grade | null>(null);
   const [averageGrade, setAverageGrade] = useState<number | null>(null);
   const [subjectAverages, setSubjectAverages] = useState<Record<string, number>>({});
-  
-  // Use our custom hook for grade system
+    // Use our custom hook for grade system
   const { gradeSystem } = useGradeSystem();
+  const { displayLabel } = useDisplayPreferences();
   
   // Initialize Supabase client
   const supabase = createClient();
@@ -383,12 +384,11 @@ export default function Grades() {
                 <div className="flex flex-col space-y-1.5">
                   <h3 className="text-lg font-semibold">Grade Statistics</h3>
                   <p className="text-sm text-muted-foreground">Your overall performance</p>
-                </div>
-                <div className="mt-6 flex items-center justify-between">
+                </div>                <div className="mt-6 flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Average Grade</p>
+                    <p className="text-sm text-muted-foreground">{getDisplayLabel(displayLabel)}</p>
                     <div className={`text-3xl sm:text-4xl font-bold ${averageGrade ? getAverageGradeTextColor(averageGrade) : ''}`}>
-                      {averageGrade ?? 'N/A'}
+                      {averageGrade ? convertGradeForDisplay(averageGrade, gradeSystem, displayLabel).toFixed(2) : 'N/A'}
                     </div>
                   </div>
                   <div>
@@ -401,12 +401,11 @@ export default function Grades() {
                 <div className="mt-6">
                   <p className="text-sm font-medium border-b pb-2 mb-2">Average by Subject</p>
                   <div className="overflow-y-auto max-h-40">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2">
-                      {Object.entries(subjectAverages).map(([subject, average]) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2">                      {Object.entries(subjectAverages).map(([subject, average]) => (
                         <div key={subject} className="flex justify-between items-center pr-4">
                           <span className="font-medium truncate mr-2">{subject}:</span>
                           <span className={`font-semibold ${getAverageGradeTextColor(average)}`}>
-                            {average}
+                            {convertGradeForDisplay(average, gradeSystem, displayLabel).toFixed(2)}
                           </span>
                         </div>
                       ))}
@@ -425,12 +424,11 @@ export default function Grades() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={prepareChartData()}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />                                            <YAxis
-                        domain={
+                      <XAxis dataKey="date" tick={{ fontSize: 12 }} />                                            <YAxis                        domain={
                           gradeSystem === '1best' ? [1, 6] :
                           gradeSystem === 'ib' ? [1, 7] :
                           gradeSystem === 'percentage' ? [0, 100] :
-                          gradeSystem === 'gpa' ? [0, 4] :
+                          gradeSystem === 'american' ? [0, 4] :
                           [1, 6] // Default fallback
                         }
                         reversed={gradeSystem === '1best'}

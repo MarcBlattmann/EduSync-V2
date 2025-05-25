@@ -3,7 +3,7 @@ import { createClient } from './supabase/client';
 /**
  * Grade system types supported by the application
  */
-export type GradeSystem = '6best' | '1best' | 'american' | 'gpa' | 'percentage' | 'ib';
+export type GradeSystem = '6best' | '1best' | 'american' | 'percentage' | 'ib';
 
 /**
  * Get the user's preferred grade system from their Supabase metadata or localStorage
@@ -29,7 +29,7 @@ export async function getUserGradeSystem(): Promise<GradeSystem> {
     if (typeof window !== 'undefined') {
       const localGradeSystem = localStorage.getItem('gradeSystem');
       if (localGradeSystem === '1best' || localGradeSystem === '6best' || 
-          localGradeSystem === 'american' || localGradeSystem === 'gpa' || 
+          localGradeSystem === 'american' || 
           localGradeSystem === 'percentage' || localGradeSystem === 'ib') {
         // If we found it in localStorage but not in Supabase, try to save it to Supabase
         if (user) {
@@ -141,9 +141,8 @@ export function sortGradesBySystem(grades: number[], system: GradeSystem): numbe
  */
 export function getGradeSystemSync(): GradeSystem {
   if (typeof window !== 'undefined') {
-    const system = localStorage.getItem('gradeSystem');
-    if (system === '1best' || system === '6best' || system === 'american' || 
-        system === 'gpa' || system === 'percentage' || system === 'ib') {
+    const system = localStorage.getItem('gradeSystem');    if (system === '1best' || system === '6best' || system === 'american' || 
+        system === 'percentage' || system === 'ib') {
       return system;
     }
   }

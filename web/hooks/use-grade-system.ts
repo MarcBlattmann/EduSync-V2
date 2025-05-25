@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
-export type GradeSystem = '6best' | '1best' | 'american' | 'gpa' | 'percentage' | 'ib';
+export type GradeSystem = '6best' | '1best' | 'american' | 'percentage' | 'ib';
 
 /**
  * React hook that manages grade system state and syncs between localStorage and Supabase
@@ -14,9 +14,11 @@ export function useGradeSystem() {
   // Initialize with default or localStorage value
   const [gradeSystem, setGradeSystemState] = useState<GradeSystem>(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('gradeSystem');      return (stored === '1best' || stored === '6best' || stored === 'american' || stored === 'gpa' || stored === 'percentage' || stored === 'ib') 
-        ? stored 
-        : '6best';
+      const stored = localStorage.getItem('gradeSystem');
+      if (stored === '1best' || stored === '6best' || stored === 'american' || stored === 'percentage' || stored === 'ib') {
+        return stored;
+      }
+      return '6best';
     }
     return '6best';
   });
@@ -95,7 +97,7 @@ export function useGradeSystem() {
  * Get the grade color based on the grade value and system
  * 
  * @param grade - The grade value
- * @param system - The grade system ('6best', '1best', 'american', 'gpa', 'percentage')
+ * @param system - The grade system ('6best', '1best', 'american', 'percentage', 'ib')
  * @returns CSS class for the appropriate text color
  */
 export function getGradeColor(grade: number, system: GradeSystem): string {
@@ -112,20 +114,11 @@ export function getGradeColor(grade: number, system: GradeSystem): string {
       return "text-red-600 dark:text-red-400";                         // Needs improvement (1-3)
     
     case 'american':
-      // American letter grade system (A=4.0, B=3.0, etc.)
-      if (grade >= 4) return "text-green-600 dark:text-green-400";      // A (4.0-3.7)
+      // American letter grade system (A=4.0, B=3.0, etc.)      if (grade >= 4) return "text-green-600 dark:text-green-400";      // A (4.0-3.7)
       if (grade >= 3) return "text-green-500 dark:text-green-300";      // B (3.3-3.0)
       if (grade >= 2) return "text-yellow-500 dark:text-yellow-300";    // C (2.7-2.0)
       if (grade >= 1) return "text-orange-500 dark:text-orange-300";    // D (1.7-1.0)
       return "text-red-600 dark:text-red-400";                         // F (0.0)
-    
-    case 'gpa':
-      // GPA system (0.0-4.0)
-      if (grade >= 3.7) return "text-green-600 dark:text-green-400";    // A/A-
-      if (grade >= 3.0) return "text-green-500 dark:text-green-300";    // B+/B/B-
-      if (grade >= 2.0) return "text-yellow-500 dark:text-yellow-300";  // C+/C/C-
-      if (grade >= 1.0) return "text-orange-500 dark:text-orange-300";  // D+/D/D-
-      return "text-red-600 dark:text-red-400";                         // F
     
     case 'percentage':
       // Percentage-based system (0-100)
@@ -161,17 +154,12 @@ export function formatGrade(grade: number, system: GradeSystem): string {
       if (grade >= 3.3) return 'B+';
       if (grade >= 3.0) return 'B';
       if (grade >= 2.7) return 'B-';
-      if (grade >= 2.3) return 'C+';
-      if (grade >= 2.0) return 'C';
+      if (grade >= 2.3) return 'C+';      if (grade >= 2.0) return 'C';
       if (grade >= 1.7) return 'C-';
       if (grade >= 1.3) return 'D+';
       if (grade >= 1.0) return 'D';
       if (grade >= 0.7) return 'D-';
       return 'F';
-    
-    case 'gpa':
-      // Format to one decimal place
-      return grade.toFixed(1);
     
     case 'percentage':
       // Format as percentage
@@ -201,12 +189,9 @@ export function getGradeRange(system: GradeSystem): { min: number, max: number, 
       return { min: 0, max: 6, step: 0.01 };
     case '6best':
       return { min: 0, max: 6, step: 0.01 };
-    case 'ib':
-      return { min: 1, max: 7, step: 0.01 };
+    case 'ib':      return { min: 1, max: 7, step: 0.01 };
     case 'american':
       return { min: 0, max: 4, step: 0.01 }; // More precise steps for flexibility
-    case 'gpa':
-      return { min: 0, max: 4, step: 0.01 };
     case 'percentage':
       return { min: 0, max: 100, step: 0.01 };
     default:
@@ -244,12 +229,7 @@ export function convertGrade(grade: number, fromSystem: GradeSystem, toSystem: G
       break;
     case 'american':
       // A(4.0) is best, F(0) is worst
-      normalized = grade / 4.0;
-      break;
-    case 'gpa':
-      // 4.0 is best, 0.0 is worst
-      normalized = grade / 4.0;
-      break;
+      normalized = grade / 4.0;      break;
     case 'percentage':
       // 100% is best, 0% is worst
       normalized = grade / 100;
@@ -267,15 +247,11 @@ export function convertGrade(grade: number, fromSystem: GradeSystem, toSystem: G
       return 1 + (5 * (1 - normalized));
     case '6best':
       // 6 is best, 1 is worst
-      return 1 + (5 * normalized);
-    case 'ib':
+      return 1 + (5 * normalized);    case 'ib':
       // IB: 7 is best, 1 is worst
       return 1 + (6 * normalized);
     case 'american':
       // A(4.0) is best, F(0) is worst
-      return 4.0 * normalized;
-    case 'gpa':
-      // 4.0 is best, 0.0 is worst
       return 4.0 * normalized;
     case 'percentage':
       // 100% is best, 0% is worst

@@ -3,15 +3,15 @@
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 
-type GradeSystem = '6best' | '1best' | 'american' | 'percentage' | 'ib';
+type DisplayLabelPreference = 'averageGrade' | 'gpa';
 
 /**
- * Server action to save grade system preference to Supabase user metadata
+ * Server action to save display label preference to Supabase user metadata
  * 
- * @param system The grade system to save ('6best', '1best', 'american', 'percentage', 'ib')
+ * @param preference The display preference to save ('averageGrade' | 'gpa')
  * @returns Object with success status and any error message
  */
-export async function saveGradeSystemToSupabase(system: GradeSystem): Promise<{ 
+export async function saveDisplayLabelToSupabase(preference: DisplayLabelPreference): Promise<{ 
   success: boolean; 
   error?: string;
 }> {
@@ -32,11 +32,11 @@ export async function saveGradeSystemToSupabase(system: GradeSystem): Promise<{
     // Get current metadata to preserve other values
     const currentMetadata = user.user_metadata || {};
     
-    // Update the user metadata with the grade system preference
+    // Update the user metadata with the display preference
     const { error } = await supabase.auth.updateUser({
       data: {
         ...currentMetadata,
-        grade_system: system
+        display_label: preference
       }
     });
     
@@ -49,7 +49,7 @@ export async function saveGradeSystemToSupabase(system: GradeSystem): Promise<{
     
     return { success: true };
   } catch (error) {
-    console.error('Error saving grade system:', error);
+    console.error('Error saving display preference:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

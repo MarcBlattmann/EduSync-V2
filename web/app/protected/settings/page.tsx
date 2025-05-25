@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { useGradeSystem, GradeSystem } from "@/hooks/use-grade-system";
+import { useDisplayPreferences, DisplayLabelPreference } from "@/hooks/use-display-preferences";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { v4 as uuidv4 } from 'uuid';
@@ -25,10 +26,10 @@ export default function Settings() {
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [avatar, setAvatar] = useState("");
-  const [activeTab, setActiveTab] = useState("profile");
-  const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("profile");  const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const { gradeSystem, setGradeSystem, isLoading: isGradeSystemLoading } = useGradeSystem(); // Use the grade system hook instead of local state
+  const { displayLabel, setDisplayLabel, isLoading: isDisplayPreferencesLoading } = useDisplayPreferences(); // Use the display preferences hook
 
   const router = useRouter();
   const supabase = createClient();
@@ -122,6 +123,29 @@ export default function Settings() {
     } catch (error) {
       console.error("Error saving grade system:", error);
       alert("Failed to save grade system preference");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Save display label preference using our hook
+  const handleDisplayLabelChange = async (newLabel: DisplayLabelPreference) => {
+    setIsSaving(true);
+    
+    try {
+      // Use the setDisplayLabel function from our hook
+      // This will update both localStorage and Supabase
+      const success = await setDisplayLabel(newLabel);
+      
+      if (!success) {
+        throw new Error('Failed to save display label preference');
+      }
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error saving display label preference:", error);
+      alert("Failed to save display label preference");
     } finally {
       setIsSaving(false);
     }
@@ -437,19 +461,7 @@ export default function Settings() {
                           onClick={() => handleGradeSystemChange('american')}
                           type="button"
                         >
-                          <span className="text-lg font-bold">A-F</span>
-                          <span className="text-xs">American</span>
-                        </button>
-                        <button
-                          className={cn(
-                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
-                            gradeSystem === 'gpa' ? 'border-primary bg-accent/50' : ''
-                          )}
-                          onClick={() => handleGradeSystemChange('gpa')}
-                          type="button"
-                        >
-                          <span className="text-lg font-bold">4.0</span>
-                          <span className="text-xs">GPA</span>
+                          <span className="text-lg font-bold">A-F</span>                        <span className="text-xs">American</span>
                         </button>
                         <button
                           className={cn(
@@ -461,9 +473,37 @@ export default function Settings() {
                         >
                           <span className="text-lg font-bold">%</span>
                           <span className="text-xs">Percentage</span>
+                        </button>                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">Choose the grading system that matches your educational institution.</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium mb-3">Display Label Preference</h4>
+                      <div className="grid grid-cols-2 gap-3 max-w-md">
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                            displayLabel === 'averageGrade' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleDisplayLabelChange('averageGrade')}
+                          type="button"
+                        >
+                          <span className="text-sm font-medium">Average Grade</span>
+                          <span className="text-xs text-muted-foreground">Standard label</span>
+                        </button>
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                            displayLabel === 'gpa' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleDisplayLabelChange('gpa')}
+                          type="button"
+                        >
+                          <span className="text-sm font-medium">GPA</span>
+                          <span className="text-xs text-muted-foreground">Grade Point Average</span>
                         </button>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">Choose the grading system that matches your educational institution.</p>
+                      <p className="text-xs text-muted-foreground mt-2">Choose how grade averages are labeled in the interface. This only affects the display label, not the calculation.</p>
                     </div>
                   </CardContent>                  <CardFooter className="border-t px-6 py-4 flex justify-between items-center">
                     {saveSuccess && activeTab === "system" && (
