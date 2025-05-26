@@ -6,11 +6,12 @@
 
 
 EduSync is a user-friendly web app that helps students stay organized throughout the school year.
-</div>
 
 ---
 
 ## ✨ Current Features
+
+</div>
 
 <table>
   <tr>
