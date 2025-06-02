@@ -9,7 +9,7 @@ EduSync is a user-friendly web app that helps students stay organized throughout
 
 ---
 
-## ✨ Current Features
+## ✨ Current Features 
 
 </div>
 
