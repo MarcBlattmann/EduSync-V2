@@ -7,7 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UpcomingEvents } from "@/components/upcoming-events";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useMemo } from "react";
 import { CalendarIcon, GraduationCapIcon, Calendar, Star } from "lucide-react";
 import Link from "next/link";
 import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
@@ -86,10 +86,39 @@ function GradeStats({ userId }: { userId: string }) {
   const [gradeStats, setGradeStats] = useState<GradeStats | null>(null);
   const [error, setError] = useState(false);
   const [summaryData, setSummaryData] = useState<GradeSummary[]>([]);
-  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("all");
-  const { displayLabel } = useDisplayPreferences();
+  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("all");  const { displayLabel } = useDisplayPreferences();
   const { gradeSystem } = useGradeSystem();
   const { semesters, activeSemester } = useSemesters();
+
+  // Calculate optimal width for semester selector dropdown (same logic as grades page)
+  const semesterSelectorWidth = useMemo(() => {
+    // Calculate character width for longest semester name (including icons and padding)
+    const basePadding = 48; // Base padding for borders and spacing
+    const calendarIconWidth = 20; // Calendar icon width + margin
+    const starIconWidth = 16; // Star icon width + margin
+    const dropdownArrowWidth = 20; // Dropdown arrow width
+    
+    // Find the longest semester name
+    const longestSemesterName = semesters.reduce((longest, semester) => {
+      const displayName = semester.name;
+      return displayName.length > longest.length ? displayName : longest;
+    }, "All Semesters");
+    
+    // More accurate character width estimation for medium font weight
+    // Different characters have different widths, so we use a slightly higher estimate
+    const avgCharWidth = 9; // Average character width for medium font
+    const textWidth = longestSemesterName.length * avgCharWidth;
+    
+    // Calculate total width needed
+    const totalWidth = basePadding + calendarIconWidth + textWidth + starIconWidth + dropdownArrowWidth;
+    
+    // Ensure reasonable bounds
+    const minWidth = 180;
+    const maxWidth = 400;
+    
+    return Math.max(minWidth, Math.min(maxWidth, totalWidth));
+  }, [semesters]);
+
     useEffect(() => {
     async function fetchGradeStats() {
       try {
@@ -175,7 +204,10 @@ function GradeStats({ userId }: { userId: string }) {
                   value={selectedSemesterId}
                   onValueChange={setSelectedSemesterId}
                 >
-                  <SelectTrigger className="w-48 px-3">
+                  <SelectTrigger 
+                    className="px-3" 
+                    style={{ width: `${semesterSelectorWidth}px` }}
+                  >
                     <Calendar className="h-4 w-4 flex-shrink-0" />
                     <SelectValue placeholder="Select semester" />
                   </SelectTrigger>
@@ -256,7 +288,10 @@ function GradeStats({ userId }: { userId: string }) {
                   value={selectedSemesterId}
                   onValueChange={setSelectedSemesterId}
                 >
-                  <SelectTrigger className="w-48 px-3">
+                  <SelectTrigger 
+                    className="px-3" 
+                    style={{ width: `${semesterSelectorWidth}px` }}
+                  >
                     <Calendar className="h-4 w-4 flex-shrink-0" />
                     <SelectValue placeholder="Select semester" />
                   </SelectTrigger>
@@ -321,7 +356,10 @@ function GradeStats({ userId }: { userId: string }) {
                 value={selectedSemesterId}
                 onValueChange={setSelectedSemesterId}
               >
-                <SelectTrigger className="w-48 px-3">
+                <SelectTrigger 
+                  className="px-3" 
+                  style={{ width: `${semesterSelectorWidth}px` }}
+                >
                   <Calendar className="h-4 w-4 flex-shrink-0" />
                   <SelectValue placeholder="Select semester" />
                 </SelectTrigger>
