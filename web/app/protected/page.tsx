@@ -8,11 +8,12 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UpcomingEvents } from "@/components/upcoming-events";
 import { Suspense, useEffect, useState } from "react";
-import { CalendarIcon, GraduationCapIcon } from "lucide-react";
+import { CalendarIcon, GraduationCapIcon, Calendar, Star } from "lucide-react";
 import Link from "next/link";
 import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
 import { useGradeSystem } from "@/hooks/use-grade-system";
 import { useSemesters } from "@/hooks/use-semesters";
+import { getSemesterIdFromDate } from "@/utils/semester-detection";
 import { 
   Select,
   SelectContent,
@@ -105,17 +106,11 @@ function GradeStats({ userId }: { userId: string }) {
           setIsLoading(false);
           return;
         }
-        
-        // Fallback to direct query with semester filtering
+          // Fallback to direct query with semester filtering
         let query = supabase
           .from('grades')
-          .select('subject, grade, semester_id')
+          .select('subject, grade, semester_id, date')
           .eq('user_id', userId);
-        
-        // Apply semester filter if not "all"
-        if (selectedSemesterId !== "all") {
-          query = query.eq('semester_id', selectedSemesterId);
-        }
         
         const { data, error } = await query.limit(50);
         
@@ -123,7 +118,30 @@ function GradeStats({ userId }: { userId: string }) {
           console.error('Error fetching grades:', error);
           setError(true);
         } else {
-          setSummaryData(data || []);
+          // Apply semester filtering with the same logic as grades page
+          let filteredData = data || [];
+          
+          if (selectedSemesterId !== "all") {
+            const selectedSemester = semesters.find(s => s.id === selectedSemesterId);
+            if (selectedSemester) {
+              filteredData = filteredData.filter(grade => {
+                // Check if grade has semester_id that matches selected semester
+                if (grade.semester_id === selectedSemester.id) {
+                  return true;
+                }
+                
+                // If grade doesn't have semester_id, try to determine it from date
+                if (!grade.semester_id && grade.date) {
+                  const detectedSemesterId = getSemesterIdFromDate(grade.date, semesters, activeSemester);
+                  return detectedSemesterId === selectedSemester.id;
+                }
+                
+                return false;
+              });
+            }
+          }
+          
+          setSummaryData(filteredData);
         }
       } catch (e) {
         console.error('Error in GradeStats component:', e);
@@ -142,32 +160,40 @@ function GradeStats({ userId }: { userId: string }) {
 
   if (error) {
     return <GradeStatsError />;
-  }    // If we have grade stats from stored procedure
+  }  // If we have grade stats from stored procedure
   if (gradeStats) {
     return (
       <Card className="flex flex-col">        <CardHeader className="pb-2">
-          <CardTitle>Grade Overview</CardTitle>
-          <CardDescription>Your current academic performance</CardDescription>
-          {semesters.length > 0 && (
-            <div className="pt-2">
-              <Select
-                value={selectedSemesterId}
-                onValueChange={setSelectedSemesterId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select semester" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Semesters</SelectItem>
-                  {semesters.map((semester) => (
-                    <SelectItem key={semester.id} value={semester.id}>
-                      {semester.name} {isCurrentlyActive(semester) && "(Active)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Grade Overview</CardTitle>
+              <CardDescription>Your current academic performance</CardDescription>
             </div>
-          )}
+            {semesters.length > 0 && (
+              <div className="ml-4">
+                <Select
+                  value={selectedSemesterId}
+                  onValueChange={setSelectedSemesterId}
+                >
+                  <SelectTrigger className="w-48 px-3">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <SelectValue placeholder="Select semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="px-3">All Semesters</SelectItem>
+                    {semesters.map((semester) => (
+                      <SelectItem key={semester.id} value={semester.id} className="px-3">
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          {semester.name}
+                          {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0" />}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col pb-6">
           {gradeStats.total_entries === 0 ? (
@@ -215,32 +241,40 @@ function GradeStats({ userId }: { userId: string }) {
         </CardContent>
       </Card>
     );
-  }    // Handle direct query results if no stored procedure
+  }  // Handle direct query results if no stored procedure
   if (summaryData.length === 0) {
     return (
       <Card className="flex flex-col">        <CardHeader className="pb-2">
-          <CardTitle>Grade Overview</CardTitle>
-          <CardDescription>Your current academic performance</CardDescription>
-          {semesters.length > 0 && (
-            <div className="pt-2">
-              <Select
-                value={selectedSemesterId}
-                onValueChange={setSelectedSemesterId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select semester" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Semesters</SelectItem>
-                  {semesters.map((semester) => (
-                    <SelectItem key={semester.id} value={semester.id}>
-                      {semester.name} {isCurrentlyActive(semester) && "(Active)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Grade Overview</CardTitle>
+              <CardDescription>Your current academic performance</CardDescription>
             </div>
-          )}
+            {semesters.length > 0 && (
+              <div className="ml-4">
+                <Select
+                  value={selectedSemesterId}
+                  onValueChange={setSelectedSemesterId}
+                >
+                  <SelectTrigger className="w-48 px-3">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <SelectValue placeholder="Select semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="px-3">All Semesters</SelectItem>
+                    {semesters.map((semester) => (
+                      <SelectItem key={semester.id} value={semester.id} className="px-3">
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          {semester.name}
+                          {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0" />}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col pb-6">
           <Link href="/protected/grades" className="flex-1 flex flex-col h-full">
@@ -274,33 +308,40 @@ function GradeStats({ userId }: { userId: string }) {
   });
   
   Object.entries(subjectTotals).forEach(([subject, data]) => {
-    subjectAverages[subject] = parseFloat((data.sum / data.count).toFixed(2));  });  
-  return (
+    subjectAverages[subject] = parseFloat((data.sum / data.count).toFixed(2));  });  return (
     <Card className="flex flex-col">      <CardHeader className="pb-2">
-        <CardTitle>Grade Overview</CardTitle>
-        <CardDescription>Your current academic performance</CardDescription>
-        {semesters.length > 0 && (
-          <div className="pt-2">
-            <Select
-              value={selectedSemesterId}
-              onValueChange={setSelectedSemesterId}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select semester" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Semesters</SelectItem>
-                {semesters.map((semester) => (
-                  <SelectItem key={semester.id} value={semester.id}>
-                    {semester.name} {isCurrentlyActive(semester) && "(Active)"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Grade Overview</CardTitle>
+            <CardDescription>Your current academic performance</CardDescription>
           </div>
-        )}
+          {semesters.length > 0 && (
+            <div className="ml-4">
+              <Select
+                value={selectedSemesterId}
+                onValueChange={setSelectedSemesterId}
+              >
+                <SelectTrigger className="w-48 px-3">
+                  <Calendar className="h-4 w-4 flex-shrink-0" />
+                  <SelectValue placeholder="Select semester" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="px-3">All Semesters</SelectItem>
+                  {semesters.map((semester) => (
+                    <SelectItem key={semester.id} value={semester.id} className="px-3">
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        {semester.name}
+                        {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0" />}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col pb-6">        <div className="flex justify-between items-center mb-4">
+      <CardContent className="flex-grow flex flex-col pb-6"><div className="flex justify-between items-center mb-4">
           <div>
             <p className="text-sm text-muted-foreground">{getDisplayLabel(displayLabel)}</p>
             <div className={`text-3xl font-bold ${getGradeColor(averageGrade)}`}>
