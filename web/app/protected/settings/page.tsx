@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { useGradeSystem, GradeSystem } from "@/hooks/use-grade-system";
 import { useDisplayPreferences, DisplayLabelPreference } from "@/hooks/use-display-preferences";
+import { useSemesterDefault, getSemesterDefaultLabel } from "@/hooks/use-semester-default";
+import { useSemesters } from "@/hooks/use-semesters";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { v4 as uuidv4 } from 'uuid';
@@ -30,6 +32,8 @@ export default function Settings() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const { gradeSystem, setGradeSystem, isLoading: isGradeSystemLoading } = useGradeSystem(); // Use the grade system hook instead of local state
   const { displayLabel, setDisplayLabel, isLoading: isDisplayPreferencesLoading } = useDisplayPreferences(); // Use the display preferences hook
+  const { defaultSemester, setDefaultSemester, isLoading: isSemesterDefaultLoading } = useSemesterDefault(); // Use the semester default hook
+  const { semesters, activeSemester, isLoading: isSemestersLoading } = useSemesters(); // Get semesters for the dropdown
 
   const router = useRouter();
   const supabase = createClient();
@@ -127,7 +131,6 @@ export default function Settings() {
       setIsSaving(false);
     }
   };
-
   // Save display label preference using our hook
   const handleDisplayLabelChange = async (newLabel: DisplayLabelPreference) => {
     setIsSaving(true);
@@ -146,6 +149,29 @@ export default function Settings() {
     } catch (error) {
       console.error("Error saving display label preference:", error);
       alert("Failed to save display label preference");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Save semester default preference using our hook
+  const handleSemesterDefaultChange = async (newDefault: string) => {
+    setIsSaving(true);
+    
+    try {
+      // Use the setDefaultSemester function from our hook
+      // This will update both localStorage and Supabase
+      const success = await setDefaultSemester(newDefault);
+      
+      if (!success) {
+        throw new Error('Failed to save semester default preference');
+      }
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error saving semester default preference:", error);
+      alert("Failed to save semester default preference");
     } finally {
       setIsSaving(false);
     }
@@ -475,9 +501,7 @@ export default function Settings() {
                           <span className="text-xs">Percentage</span>
                         </button>                      </div>
                       <p className="text-xs text-muted-foreground mt-2">Choose the grading system that matches your educational institution.</p>
-                    </div>
-
-                    <div>
+                    </div>                    <div>
                       <h4 className="font-medium mb-3">Display Label Preference</h4>
                       <div className="grid grid-cols-2 gap-3 max-w-md">
                         <button
@@ -504,6 +528,88 @@ export default function Settings() {
                         </button>
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">Choose how grade averages are labeled in the interface. This only affects the display label, not the calculation.</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium mb-3">Default Semester Selection</h4>
+                      <div className="space-y-3 max-w-2xl">
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors w-full',
+                            defaultSemester === 'all' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleSemesterDefaultChange('all')}
+                          type="button"
+                        >
+                          <div className="flex flex-col items-start">
+                            <span className="text-sm font-medium">All Semesters</span>
+                            <span className="text-xs text-muted-foreground">Show grades from all time periods by default</span>
+                          </div>
+                          {defaultSemester === 'all' && (
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                          )}
+                        </button>
+                        
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors w-full',
+                            defaultSemester === 'active' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleSemesterDefaultChange('active')}
+                          type="button"
+                        >
+                          <div className="flex flex-col items-start">
+                            <span className="text-sm font-medium">Active Semester</span>
+                            <span className="text-xs text-muted-foreground">
+                              {activeSemester ? `Currently: ${activeSemester.name}` : 'Show currently active semester by default'}
+                            </span>
+                          </div>
+                          {defaultSemester === 'active' && (
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                          )}
+                        </button>
+
+                        {semesters.length > 0 && (
+                          <>
+                            <div className="pt-2">
+                              <span className="text-xs text-muted-foreground font-medium">Specific Semester:</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {semesters.map((semester) => (
+                                <button
+                                  key={semester.id}
+                                  className={cn(
+                                    'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors',
+                                    defaultSemester === semester.id ? 'border-primary bg-accent/50' : ''
+                                  )}
+                                  onClick={() => handleSemesterDefaultChange(semester.id)}
+                                  type="button"
+                                >
+                                  <div className="flex flex-col items-start">
+                                    <span className="text-sm font-medium">{semester.name}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {new Date(semester.start_date).toLocaleDateString('en-US', { 
+                                        month: 'short', 
+                                        year: 'numeric' 
+                                      })} - {new Date(semester.end_date).toLocaleDateString('en-US', { 
+                                        month: 'short', 
+                                        year: 'numeric' 
+                                      })}
+                                    </span>
+                                  </div>
+                                  {defaultSemester === semester.id && (
+                                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Choose which semester should be selected by default when viewing grades and summaries. 
+                        This setting applies to the home page Grade Overview and Grades page.
+                      </p>
                     </div>
                   </CardContent>                  <CardFooter className="border-t px-6 py-4 flex justify-between items-center">
                     {saveSuccess && activeTab === "system" && (

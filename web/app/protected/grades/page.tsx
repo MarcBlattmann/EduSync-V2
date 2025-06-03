@@ -30,6 +30,7 @@ import { Plus, Pencil, Trash2, Settings, Calendar, Star } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useGradeSystem, getGradeColor, convertGrade } from "@/hooks/use-grade-system";
 import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
+import { useSemesterDefault, getDefaultSemesterId } from "@/hooks/use-semester-default";
 import { useSemesters } from "@/hooks/use-semesters";
 import { getSemesterIdFromDate } from "@/utils/semester-detection";
 import { ManageSemestersDialog } from "@/components/semesters/manage-semesters-dialog";
@@ -57,12 +58,28 @@ export default function Grades() {
   const [gradeToDelete, setGradeToDelete] = useState<string | null>(null);
   const [editingGrade, setEditingGrade] = useState<Grade | null>(null);
   const [averageGrade, setAverageGrade] = useState<number | null>(null);  const [subjectAverages, setSubjectAverages] = useState<Record<string, number>>({});
-  const [manageSemestersOpen, setManageSemestersOpen] = useState<boolean>(false);
-  const [selectedSemester, setSelectedSemester] = useState<Semester | null>(null);
+  const [manageSemestersOpen, setManageSemestersOpen] = useState<boolean>(false);  const [selectedSemester, setSelectedSemester] = useState<Semester | null>(null);
     // Use our custom hook for grade system
   const { gradeSystem } = useGradeSystem();
   const { displayLabel } = useDisplayPreferences();
+  const { defaultSemester } = useSemesterDefault();
   const { semesters, activeSemester } = useSemesters();
+
+  // Initialize semester selection based on user preference
+  useEffect(() => {
+    if (!defaultSemester || semesters.length === 0) return;
+    
+    const defaultId = getDefaultSemesterId(defaultSemester, semesters, activeSemester);
+    
+    if (defaultId === 'all') {
+      setSelectedSemester(null);
+    } else {
+      const semester = semesters.find(s => s.id === defaultId);
+      if (semester) {
+        setSelectedSemester(semester);
+      }
+    }
+  }, [defaultSemester, semesters, activeSemester]);
   
   // Initialize Supabase client
   const supabase = createClient();

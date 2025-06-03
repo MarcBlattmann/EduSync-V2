@@ -12,6 +12,7 @@ import { CalendarIcon, GraduationCapIcon, Calendar, Star } from "lucide-react";
 import Link from "next/link";
 import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
 import { useGradeSystem } from "@/hooks/use-grade-system";
+import { useSemesterDefault, getDefaultSemesterId } from "@/hooks/use-semester-default";
 import { useSemesters } from "@/hooks/use-semesters";
 import { getSemesterIdFromDate } from "@/utils/semester-detection";
 import { 
@@ -85,10 +86,18 @@ function GradeStats({ userId }: { userId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [gradeStats, setGradeStats] = useState<GradeStats | null>(null);
   const [error, setError] = useState(false);
-  const [summaryData, setSummaryData] = useState<GradeSummary[]>([]);
-  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("all");  const { displayLabel } = useDisplayPreferences();
+  const [summaryData, setSummaryData] = useState<GradeSummary[]>([]);  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("all");  const { displayLabel } = useDisplayPreferences();
   const { gradeSystem } = useGradeSystem();
+  const { defaultSemester } = useSemesterDefault();
   const { semesters, activeSemester } = useSemesters();
+
+  // Initialize semester selection based on user preference
+  useEffect(() => {
+    if (!defaultSemester || semesters.length === 0) return;
+    
+    const defaultId = getDefaultSemesterId(defaultSemester, semesters, activeSemester);
+    setSelectedSemesterId(defaultId);
+  }, [defaultSemester, semesters, activeSemester]);
 
   // Calculate optimal width for semester selector dropdown (same logic as grades page)
   const semesterSelectorWidth = useMemo(() => {
