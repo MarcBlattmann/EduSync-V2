@@ -7,7 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UpcomingEvents } from "@/components/upcoming-events";
-import { Suspense, useEffect, useState, useMemo } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { CalendarIcon, GraduationCapIcon, Calendar, Star } from "lucide-react";
 import Link from "next/link";
 import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
@@ -17,11 +17,13 @@ import { useSemesters } from "@/hooks/use-semesters";
 import { getSemesterIdFromDate } from "@/utils/semester-detection";
 import { 
   Select,
-  SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-is-mobile";
+import { ResponsiveSelectContent } from "@/hooks/responsive-select";
+import { useSemesterSelectorWidth } from "@/hooks/use-semester-selector-width";
 
 // Define types for the grade data
 interface Grade {
@@ -86,47 +88,18 @@ function GradeStats({ userId }: { userId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [gradeStats, setGradeStats] = useState<GradeStats | null>(null);
   const [error, setError] = useState(false);
-  const [summaryData, setSummaryData] = useState<GradeSummary[]>([]);  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("all");  const { displayLabel } = useDisplayPreferences();
-  const { gradeSystem } = useGradeSystem();
+  const [summaryData, setSummaryData] = useState<GradeSummary[]>([]);  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("all");  const { displayLabel } = useDisplayPreferences();  const { gradeSystem } = useGradeSystem();
   const { defaultSemester } = useSemesterDefault();
   const { semesters, activeSemester } = useSemesters();
+  const isMobile = useIsMobile();
 
   // Initialize semester selection based on user preference
   useEffect(() => {
     if (!defaultSemester || semesters.length === 0) return;
     
     const defaultId = getDefaultSemesterId(defaultSemester, semesters, activeSemester);
-    setSelectedSemesterId(defaultId);
-  }, [defaultSemester, semesters, activeSemester]);
-
-  // Calculate optimal width for semester selector dropdown (same logic as grades page)
-  const semesterSelectorWidth = useMemo(() => {
-    // Calculate character width for longest semester name (including icons and padding)
-    const basePadding = 48; // Base padding for borders and spacing
-    const calendarIconWidth = 20; // Calendar icon width + margin
-    const starIconWidth = 16; // Star icon width + margin
-    const dropdownArrowWidth = 20; // Dropdown arrow width
-    
-    // Find the longest semester name
-    const longestSemesterName = semesters.reduce((longest, semester) => {
-      const displayName = semester.name;
-      return displayName.length > longest.length ? displayName : longest;
-    }, "All Semesters");
-    
-    // More accurate character width estimation for medium font weight
-    // Different characters have different widths, so we use a slightly higher estimate
-    const avgCharWidth = 9; // Average character width for medium font
-    const textWidth = longestSemesterName.length * avgCharWidth;
-    
-    // Calculate total width needed
-    const totalWidth = basePadding + calendarIconWidth + textWidth + starIconWidth + dropdownArrowWidth;
-    
-    // Ensure reasonable bounds
-    const minWidth = 180;
-    const maxWidth = 400;
-    
-    return Math.max(minWidth, Math.min(maxWidth, totalWidth));
-  }, [semesters]);
+    setSelectedSemesterId(defaultId);  }, [defaultSemester, semesters, activeSemester]);  // Simple hook that always uses vertical layout
+  const { isSmallScreen, triggerStyle, containerClasses, triggerClasses } = useSemesterSelectorWidth();
 
     useEffect(() => {
     async function fetchGradeStats() {
@@ -199,38 +172,36 @@ function GradeStats({ userId }: { userId: string }) {
   if (error) {
     return <GradeStatsError />;
   }  // If we have grade stats from stored procedure
-  if (gradeStats) {
-    return (
-      <Card className="flex flex-col">        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Grade Overview</CardTitle>
-              <CardDescription>Your current academic performance</CardDescription>
+  if (gradeStats) {    return (      <Card className="flex flex-col">        <CardHeader className="pb-2">
+          <div className="flex flex-wrap gap-3">
+            <div className="flex-1 min-w-[300px]">
+              <CardTitle className="text-lg font-semibold">Grade Overview</CardTitle>
+              <CardDescription className="text-sm text-muted-foreground">Your current academic performance</CardDescription>
             </div>
             {semesters.length > 0 && (
-              <div className="ml-4">
+              <div className="flex-1 min-w-[200px] w-full sm:w-auto sm:max-w-xs lg:max-w-none sm:flex sm:justify-end">
                 <Select
                   value={selectedSemesterId}
                   onValueChange={setSelectedSemesterId}
                 >
                   <SelectTrigger 
-                    className="px-3" 
-                    style={{ width: `${semesterSelectorWidth}px` }}
+                    className="px-3 text-ellipsis w-full"
+                    style={triggerStyle}
                   >
-                    <Calendar className="h-4 w-4 flex-shrink-0" />
-                    <SelectValue placeholder="Select semester" />
+                    <Calendar className="h-4 w-4 flex-shrink-0 mr-2" />
+                    <SelectValue placeholder="Select semester" className="truncate" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <ResponsiveSelectContent>
                     <SelectItem value="all" className="px-3">All Semesters</SelectItem>
                     {semesters.map((semester) => (
                       <SelectItem key={semester.id} value={semester.id} className="px-3">
-                        <div className="flex items-center gap-2 whitespace-nowrap">
-                          {semester.name}
-                          {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0" />}
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="truncate">{semester.name}</span>
+                          {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0 ml-auto" />}
                         </div>
                       </SelectItem>
                     ))}
-                  </SelectContent>
+                  </ResponsiveSelectContent>
                 </Select>
               </div>
             )}
@@ -282,39 +253,41 @@ function GradeStats({ userId }: { userId: string }) {
         </CardContent>
       </Card>
     );
-  }  // Handle direct query results if no stored procedure
+  }
+    // Handle direct query results if no stored procedure or summary data  
   if (summaryData.length === 0) {
     return (
-      <Card className="flex flex-col">        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Grade Overview</CardTitle>
-              <CardDescription>Your current academic performance</CardDescription>
+      <Card className="flex flex-col">
+        <CardHeader className="pb-2">
+          <div className="flex flex-wrap gap-3">
+            <div className="flex-1 min-w-[300px]">
+              <CardTitle className="text-lg font-semibold">Grade Overview</CardTitle>
+              <CardDescription className="text-sm text-muted-foreground">Your current academic performance</CardDescription>
             </div>
             {semesters.length > 0 && (
-              <div className="ml-4">
+              <div className="flex-1 min-w-[200px] w-full sm:w-auto sm:max-w-xs lg:max-w-none sm:flex sm:justify-end">
                 <Select
                   value={selectedSemesterId}
                   onValueChange={setSelectedSemesterId}
                 >
                   <SelectTrigger 
-                    className="px-3" 
-                    style={{ width: `${semesterSelectorWidth}px` }}
+                    className="px-3 text-ellipsis w-full"
+                    style={triggerStyle}
                   >
-                    <Calendar className="h-4 w-4 flex-shrink-0" />
-                    <SelectValue placeholder="Select semester" />
+                    <Calendar className="h-4 w-4 flex-shrink-0 mr-2" />
+                    <SelectValue placeholder="Select semester" className="truncate" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <ResponsiveSelectContent>
                     <SelectItem value="all" className="px-3">All Semesters</SelectItem>
                     {semesters.map((semester) => (
                       <SelectItem key={semester.id} value={semester.id} className="px-3">
-                        <div className="flex items-center gap-2 whitespace-nowrap">
-                          {semester.name}
-                          {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0" />}
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="truncate">{semester.name}</span>
+                          {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0 ml-auto" />}
                         </div>
                       </SelectItem>
                     ))}
-                  </SelectContent>
+                  </ResponsiveSelectContent>
                 </Select>
               </div>
             )}
@@ -339,7 +312,7 @@ function GradeStats({ userId }: { userId: string }) {
   const sum = summaryData.reduce((acc: number, grade: GradeSummary) => acc + grade.grade, 0);
   const averageGrade = parseFloat((sum / totalEntries).toFixed(2));
   
-  // Calculate subject averages - do this once rather than repeatedly in render
+  // Calculate subject averages 
   const subjectTotals: Record<string, SubjectTotal> = {};
   const subjectAverages: Record<string, number> = {};
   
@@ -350,39 +323,39 @@ function GradeStats({ userId }: { userId: string }) {
     subjectTotals[grade.subject].sum += grade.grade;
     subjectTotals[grade.subject].count += 1;
   });
-  
   Object.entries(subjectTotals).forEach(([subject, data]) => {
     subjectAverages[subject] = parseFloat((data.sum / data.count).toFixed(2));  });  return (
-    <Card className="flex flex-col">      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Grade Overview</CardTitle>
-            <CardDescription>Your current academic performance</CardDescription>
+    <Card className="flex flex-col">
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap gap-3">
+          <div className="flex-1 min-w-[300px]">
+            <CardTitle className="text-lg font-semibold">Grade Overview</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">Your current academic performance</CardDescription>
           </div>
           {semesters.length > 0 && (
-            <div className="ml-4">
+            <div className="flex-1 min-w-[200px] w-full sm:w-auto sm:max-w-xs lg:max-w-none sm:flex sm:justify-end">
               <Select
                 value={selectedSemesterId}
                 onValueChange={setSelectedSemesterId}
               >
                 <SelectTrigger 
-                  className="px-3" 
-                  style={{ width: `${semesterSelectorWidth}px` }}
+                  className="px-3 text-ellipsis w-full"
+                  style={triggerStyle}
                 >
-                  <Calendar className="h-4 w-4 flex-shrink-0" />
-                  <SelectValue placeholder="Select semester" />
+                  <Calendar className="h-4 w-4 flex-shrink-0 mr-2" />
+                  <SelectValue placeholder="Select semester" className="truncate" />
                 </SelectTrigger>
-                <SelectContent>
+                <ResponsiveSelectContent>
                   <SelectItem value="all" className="px-3">All Semesters</SelectItem>
                   {semesters.map((semester) => (
                     <SelectItem key={semester.id} value={semester.id} className="px-3">
-                      <div className="flex items-center gap-2 whitespace-nowrap">
-                        {semester.name}
-                        {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0" />}
+                      <div className="flex items-center gap-2 w-full">
+                        <span className="truncate">{semester.name}</span>
+                        {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0 ml-auto" />}
                       </div>
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </ResponsiveSelectContent>
               </Select>
             </div>
           )}

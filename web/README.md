@@ -12,10 +12,12 @@
 
 - **Student Dashboard**: View academic performance at a glance
 - **Grade Management**: Track, add, and analyze your grades with detailed statistics
+- **Semester Management**: Create and manage semesters with customizable default preferences
 - **Calendar System**: Manage events and schedule with an intuitive calendar interface
 - **Authentication**: Secure user authentication with Supabase Auth
 - **Responsive Design**: Works across desktop, tablet, and mobile devices
 - **Dark/Light Mode**: Theme support to match your preference
+- **User Preferences**: Customize display settings and default behaviors
 
 ## Tech Stack
 

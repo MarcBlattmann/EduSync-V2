@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { createClient } from "@/utils/supabase/client";
@@ -16,6 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-is-mobile";
+import { ResponsiveSelectContent } from "@/hooks/responsive-select";
+import { useSemesterSelectorWidth } from "@/hooks/use-semester-selector-width";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -59,11 +62,12 @@ export default function Grades() {
   const [editingGrade, setEditingGrade] = useState<Grade | null>(null);
   const [averageGrade, setAverageGrade] = useState<number | null>(null);  const [subjectAverages, setSubjectAverages] = useState<Record<string, number>>({});
   const [manageSemestersOpen, setManageSemestersOpen] = useState<boolean>(false);  const [selectedSemester, setSelectedSemester] = useState<Semester | null>(null);
-    // Use our custom hook for grade system
+  // Use our custom hook for grade system
   const { gradeSystem } = useGradeSystem();
   const { displayLabel } = useDisplayPreferences();
   const { defaultSemester } = useSemesterDefault();
   const { semesters, activeSemester } = useSemesters();
+  const isMobile = useIsMobile();
 
   // Initialize semester selection based on user preference
   useEffect(() => {
@@ -369,35 +373,8 @@ export default function Grades() {
   };  const getGradeBadgeColor = (grade: number) => {
     if (grade >= 5) return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
     if (grade >= 4) return "bg-orange-200 text-orange-700 dark:bg-orange-800/50 dark:text-orange-300";
-    return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
-  };  // Calculate optimal width for semester selector dropdown (memoized)
-  const semesterSelectorWidth = useMemo(() => {
-    // Calculate character width for longest semester name (including icons and padding)
-    const basePadding = 48; // Base padding for borders and spacing
-    const calendarIconWidth = 20; // Calendar icon width + margin
-    const starIconWidth = 16; // Star icon width + margin
-    const dropdownArrowWidth = 20; // Dropdown arrow width
-    
-    // Find the longest semester name
-    const longestSemesterName = semesters.reduce((longest, semester) => {
-      const displayName = semester.name;
-      return displayName.length > longest.length ? displayName : longest;
-    }, "All Semesters");
-    
-    // More accurate character width estimation for medium font weight
-    // Different characters have different widths, so we use a slightly higher estimate
-    const avgCharWidth = 9; // Average character width for medium font
-    const textWidth = longestSemesterName.length * avgCharWidth;
-    
-    // Calculate total width needed
-    const totalWidth = basePadding + calendarIconWidth + textWidth + starIconWidth + dropdownArrowWidth;
-    
-    // Ensure reasonable bounds
-    const minWidth = 180;
-    const maxWidth = 400;
-    
-    return Math.max(minWidth, Math.min(maxWidth, totalWidth));
-  }, [semesters]);
+    return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";  };  // Simple hook that always uses vertical layout
+  const { isSmallScreen, triggerStyle, containerClasses, triggerClasses } = useSemesterSelectorWidth();
 
   // Filter grades based on selected semester
   const getFilteredGrades = () => {
@@ -508,54 +485,51 @@ export default function Grades() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Stats Card */}              <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">
-                <div className="flex flex-col space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
+            <div className="grid gap-4 md:grid-cols-2">              {/* Stats Card */}              <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">                <div className="flex flex-col space-y-1.5">                  <div className="flex flex-wrap gap-3">
+                    <div className="flex-1 min-w-[300px]">
                       <h3 className="text-lg font-semibold">Grade Statistics</h3>
                       <p className="text-sm text-muted-foreground">
                         {selectedSemester ? `Performance for ${selectedSemester.name}` : 'Your overall performance'}
-                      </p>
-                    </div>
-                      {/* Semester Selector - moved to header */}
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={selectedSemester?.id || 'all'}
-                        onValueChange={(value) => {
-                          if (value === 'all') {
-                            handleSemesterChange(null);
-                          } else {
-                            const semester = semesters.find(s => s.id === value);
-                            if (semester) {
-                              handleSemesterChange(semester);
+                      </p>                    </div>                    {/* Semester Selector - moved to header */}
+                    <div className="flex-1 min-w-[200px] w-full sm:w-auto sm:max-w-xs lg:max-w-none sm:flex sm:justify-end">
+                      <div className="flex items-center gap-2 w-full">
+                        <Select
+                          value={selectedSemester?.id || 'all'}
+                          onValueChange={(value) => {
+                            if (value === 'all') {
+                              handleSemesterChange(null);
+                            } else {
+                              const semester = semesters.find(s => s.id === value);
+                              if (semester) {
+                                handleSemesterChange(semester);
+                              }
                             }
-                          }
-                        }}
-                        disabled={isLoading}
-                      >                        <SelectTrigger 
-                          className="px-3" 
-                          style={{ width: `${semesterSelectorWidth}px` }}
+                          }}
+                          disabled={isLoading}
                         >
-                          <Calendar className="h-4 w-4 flex-shrink-0" />
-                          <SelectValue placeholder="Select semester" />
-                        </SelectTrigger><SelectContent>
+                          <SelectTrigger 
+                            className="px-3 text-ellipsis w-full"
+                            style={triggerStyle}
+                          >
+                          <Calendar className="h-4 w-4 flex-shrink-0 mr-2" />
+                          <SelectValue placeholder="Select semester" className="truncate" />                        </SelectTrigger>
+                        <ResponsiveSelectContent className="max-w-[var(--radix-popover-content-available-width)] max-h-[50vh] overflow-y-auto">
                           <SelectItem value="all" className="px-3">All Semesters</SelectItem>
                           {semesters.map((semester) => (
                             <SelectItem key={semester.id} value={semester.id} className="px-3">
-                              <div className="flex items-center gap-2 whitespace-nowrap">
-                                {semester.name}
+                              <div className="flex items-center gap-2 w-full">
+                                <span className="truncate">{semester.name}</span>
                                 {(() => {
                                   const today = new Date();
                                   const startDate = new Date(semester.start_date);
                                   const endDate = new Date(semester.end_date);
                                   return today >= startDate && today <= endDate;
-                                })() && <Star className="h-3 w-3 fill-current flex-shrink-0" />}
+                                })() && <Star className="h-3 w-3 fill-current flex-shrink-0 ml-auto" />}
                               </div>
                             </SelectItem>
-                          ))}
-                        </SelectContent>
+                          ))}                        </ResponsiveSelectContent>
                       </Select>
+                      </div>
                     </div>
                   </div>
                 </div><div className="mt-6 flex items-center justify-between">

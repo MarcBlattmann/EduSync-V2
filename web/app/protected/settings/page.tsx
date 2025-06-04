@@ -540,10 +540,9 @@ export default function Settings() {
                           )}
                           onClick={() => handleSemesterDefaultChange('all')}
                           type="button"
-                        >
-                          <div className="flex flex-col items-start">
-                            <span className="text-sm font-medium">All Semesters</span>
-                            <span className="text-xs text-muted-foreground">Show grades from all time periods by default</span>
+                        >                          <div className="flex flex-col items-start overflow-hidden">
+                            <span className="text-sm font-medium truncate w-full">All Semesters</span>
+                            <span className="text-xs text-muted-foreground truncate w-full">Show grades from all time periods by default</span>
                           </div>
                           {defaultSemester === 'all' && (
                             <CheckCircle2 className="h-4 w-4 text-primary" />
@@ -557,10 +556,9 @@ export default function Settings() {
                           )}
                           onClick={() => handleSemesterDefaultChange('active')}
                           type="button"
-                        >
-                          <div className="flex flex-col items-start">
-                            <span className="text-sm font-medium">Active Semester</span>
-                            <span className="text-xs text-muted-foreground">
+                        >                          <div className="flex flex-col items-start overflow-hidden">
+                            <span className="text-sm font-medium truncate w-full">Active Semester</span>
+                            <span className="text-xs text-muted-foreground truncate w-full">
                               {activeSemester ? `Currently: ${activeSemester.name}` : 'Show currently active semester by default'}
                             </span>
                           </div>
@@ -573,21 +571,19 @@ export default function Settings() {
                           <>
                             <div className="pt-2">
                               <span className="text-xs text-muted-foreground font-medium">Specific Semester:</span>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            </div>                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               {semesters.map((semester) => (
                                 <button
                                   key={semester.id}
                                   className={cn(
-                                    'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors',
+                                    'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors w-full',
                                     defaultSemester === semester.id ? 'border-primary bg-accent/50' : ''
                                   )}
                                   onClick={() => handleSemesterDefaultChange(semester.id)}
                                   type="button"
-                                >
-                                  <div className="flex flex-col items-start">
-                                    <span className="text-sm font-medium">{semester.name}</span>
-                                    <span className="text-xs text-muted-foreground">
+                                >                                  <div className="flex flex-col items-start overflow-hidden">
+                                    <span className="text-sm font-medium truncate w-full">{semester.name}</span>
+                                    <span className="text-xs text-muted-foreground truncate w-full">
                                       {new Date(semester.start_date).toLocaleDateString('en-US', { 
                                         month: 'short', 
                                         year: 'numeric' 
