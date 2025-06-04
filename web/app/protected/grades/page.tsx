@@ -490,9 +490,11 @@ export default function Grades() {
                       <h3 className="text-lg font-semibold">Grade Statistics</h3>
                       <p className="text-sm text-muted-foreground">
                         {selectedSemester ? `Performance for ${selectedSemester.name}` : 'Your overall performance'}
-                      </p>                    </div>                    {/* Semester Selector - moved to header */}
+                      </p>
+                    </div>
+                    {/* Semester Selector - moved to header */}
                     <div className="flex-1 min-w-[200px] w-full sm:w-auto sm:max-w-xs lg:max-w-none sm:flex sm:justify-end">
-                      <div className="flex items-center gap-2 w-full">
+                      <div className="flex justify-end items-center gap-2 w-full">
                         <Select
                           value={selectedSemester?.id || 'all'}
                           onValueChange={(value) => {
