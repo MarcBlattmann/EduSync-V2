@@ -152,7 +152,8 @@ export function ManageSemestersDialog({ open, onOpenChange }: ManageSemestersDia
 
             {/* Semesters Table */}
             <div className="border rounded-lg overflow-y-auto max-h-[400px]">
-              <Table>                <TableHeader>
+              <Table>
+                <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Period</TableHead>
