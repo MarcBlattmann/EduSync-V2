@@ -17,7 +17,8 @@ import { useTheme } from "next-themes";
 import { useGradeSystem, GradeSystem } from "@/hooks/use-grade-system";
 import { useDisplayPreferences, DisplayLabelPreference } from "@/hooks/use-display-preferences";
 import { useSemesterDefault, getSemesterDefaultLabel } from "@/hooks/use-semester-default";
-import { useSemesters } from "@/hooks/use-semesters";
+import { useSubjectPreferences, getSubjectFilterLabel } from "@/hooks/use-subject-preferences";
+import { useSemesters } from "@/contexts/semester-context";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { v4 as uuidv4 } from 'uuid';
@@ -29,10 +30,10 @@ export default function Settings() {
   const [fullName, setFullName] = useState("");
   const [avatar, setAvatar] = useState("");
   const [activeTab, setActiveTab] = useState("profile");  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const { gradeSystem, setGradeSystem, isLoading: isGradeSystemLoading } = useGradeSystem(); // Use the grade system hook instead of local state
+  const [saveSuccess, setSaveSuccess] = useState(false);  const { gradeSystem, setGradeSystem, isLoading: isGradeSystemLoading } = useGradeSystem(); // Use the grade system hook instead of local state
   const { displayLabel, setDisplayLabel, isLoading: isDisplayPreferencesLoading } = useDisplayPreferences(); // Use the display preferences hook
   const { defaultSemester, setDefaultSemester, isLoading: isSemesterDefaultLoading } = useSemesterDefault(); // Use the semester default hook
+  const { subjectFilter, setSubjectFilter, isLoading: isSubjectFilterLoading } = useSubjectPreferences(); // Use the subject filter hook
   const { semesters, activeSemester, isLoading: isSemestersLoading } = useSemesters(); // Get semesters for the dropdown
 
   const router = useRouter();
@@ -153,7 +154,6 @@ export default function Settings() {
       setIsSaving(false);
     }
   };
-
   // Save semester default preference using our hook
   const handleSemesterDefaultChange = async (newDefault: string) => {
     setIsSaving(true);
@@ -172,6 +172,29 @@ export default function Settings() {
     } catch (error) {
       console.error("Error saving semester default preference:", error);
       alert("Failed to save semester default preference");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Save subject filter preference using our hook
+  const handleSubjectFilterChange = async (newFilter: string) => {
+    setIsSaving(true);
+    
+    try {
+      // Use the setSubjectFilter function from our hook
+      // This will update both localStorage and Supabase
+      const success = await setSubjectFilter(newFilter as 'all' | 'active-semester');
+      
+      if (!success) {
+        throw new Error('Failed to save subject filter preference');
+      }
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error saving subject filter preference:", error);
+      alert("Failed to save subject filter preference");
     } finally {
       setIsSaving(false);
     }
@@ -533,50 +556,53 @@ export default function Settings() {
                     <div>
                       <h4 className="font-medium mb-3">Default Semester Selection</h4>
                       <div className="space-y-3 max-w-2xl">
-                        <button
-                          className={cn(
-                            'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors w-full',
-                            defaultSemester === 'all' ? 'border-primary bg-accent/50' : ''
-                          )}
-                          onClick={() => handleSemesterDefaultChange('all')}
-                          type="button"
-                        >                          <div className="flex flex-col items-start overflow-hidden">
-                            <span className="text-sm font-medium truncate w-full">All Semesters</span>
-                            <span className="text-xs text-muted-foreground truncate w-full">Show grades from all time periods by default</span>
-                          </div>
-                          {defaultSemester === 'all' && (
-                            <CheckCircle2 className="h-4 w-4 text-primary" />
-                          )}
-                        </button>
-                        
-                        <button
-                          className={cn(
-                            'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors w-full',
-                            defaultSemester === 'active' ? 'border-primary bg-accent/50' : ''
-                          )}
-                          onClick={() => handleSemesterDefaultChange('active')}
-                          type="button"
-                        >                          <div className="flex flex-col items-start overflow-hidden">
-                            <span className="text-sm font-medium truncate w-full">Active Semester</span>
-                            <span className="text-xs text-muted-foreground truncate w-full">
-                              {activeSemester ? `Currently: ${activeSemester.name}` : 'Show currently active semester by default'}
-                            </span>
-                          </div>
-                          {defaultSemester === 'active' && (
-                            <CheckCircle2 className="h-4 w-4 text-primary" />
-                          )}
-                        </button>
+                        <div className="flex gap-3 flex-wrap">
+                            <button
+                            className={cn(
+                              'border rounded-lg p-3 flex items-center cursor-pointer hover:border-primary transition-colors w-fit px-10 gap-5',
+                              defaultSemester === 'all' ? 'border-primary bg-accent/50' : ''
+                            )}
+                            onClick={() => handleSemesterDefaultChange('all')}
+                            type="button"
+                          >                          <div className="flex flex-col items-start overflow-hidden">
+                              <span className="text-sm font-medium truncate w-full">All Semesters</span>
+                              <span className="text-xs text-muted-foreground truncate w-full">Show grades from all time periods by default</span>
+                            </div>
+                            {defaultSemester === 'all' && (
+                              <CheckCircle2 className="h-4 w-4 text-primary" />
+                            )}
+                          </button>
+                          
+                          <button
+                            className={cn(
+                              'border rounded-lg p-3 flex items-center cursor-pointer hover:border-primary transition-colors w-fit px-10 gap-5',
+                              defaultSemester === 'active' ? 'border-primary bg-accent/50' : ''
+                            )}
+                            onClick={() => handleSemesterDefaultChange('active')}
+                            type="button"
+                          >                          <div className="flex flex-col items-start overflow-hidden">
+                              <span className="text-sm font-medium truncate w-full">Active Semester</span>
+                              <span className="text-xs text-muted-foreground truncate w-full">
+                                {activeSemester ? `Currently: ${activeSemester.name}` : 'Show currently active semester by default'}
+                              </span>
+                            </div>
+                            {defaultSemester === 'active' && (
+                              <CheckCircle2 className="h-4 w-4 text-primary" />
+                            )}
+                          </button>
+                        </div>
 
                         {semesters.length > 0 && (
                           <>
                             <div className="pt-2">
                               <span className="text-xs text-muted-foreground font-medium">Specific Semester:</span>
-                            </div>                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            </div>
+                            <div className="flex gap-3 flex-wrap">
                               {semesters.map((semester) => (
                                 <button
                                   key={semester.id}
                                   className={cn(
-                                    'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors w-full',
+                                    'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors w-fit px-10 gap-5',
                                     defaultSemester === semester.id ? 'border-primary bg-accent/50' : ''
                                   )}
                                   onClick={() => handleSemesterDefaultChange(semester.id)}
@@ -601,13 +627,57 @@ export default function Settings() {
                             </div>
                           </>
                         )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      </div>                      <p className="text-xs text-muted-foreground mt-2">
                         Choose which semester should be selected by default when viewing grades and summaries. 
                         This setting applies to the home page Grade Overview and Grades page.
                       </p>
                     </div>
-                  </CardContent>                  <CardFooter className="border-t px-6 py-4 flex justify-between items-center">
+
+                    <div>
+                      <h4 className="font-medium mb-3">Subject Filter Preference</h4>
+                      <div className="flex gap-3 flex-wrap">
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors w-fit px-10 gap-5',
+                            subjectFilter === 'all' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleSubjectFilterChange('all')}
+                          type="button"
+                        >
+                          <div className="flex flex-col items-start overflow-hidden">
+                            <span className="text-sm font-medium truncate w-full">All Subjects</span>
+                            <span className="text-xs text-muted-foreground truncate w-full">Show subjects from all semesters</span>
+                          </div>
+                          {subjectFilter === 'all' && (
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                          )}
+                        </button>
+                        
+                        <button
+                          className={cn(
+                            'border rounded-lg p-3 flex justify-between items-center cursor-pointer hover:border-primary transition-colors w-fit px-10 gap-5',
+                            subjectFilter === 'active-semester' ? 'border-primary bg-accent/50' : ''
+                          )}
+                          onClick={() => handleSubjectFilterChange('active-semester')}
+                          type="button"
+                        >
+                          <div className="flex flex-col items-start overflow-hidden">
+                            <span className="text-sm font-medium truncate w-full">Active Semester Only</span>
+                            <span className="text-xs text-muted-foreground truncate w-full">
+                              {activeSemester ? `Currently: ${activeSemester.name}` : 'Filter subjects by active semester'}
+                            </span>
+                          </div>
+                          {subjectFilter === 'active-semester' && (
+                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Choose whether to show all subjects or only subjects from the active semester when adding new grades. 
+                        This affects the subject dropdown in the Add Grade dialog.
+                      </p>
+                    </div>
+                  </CardContent><CardFooter className="border-t px-6 py-4 flex justify-between items-center">
                     {saveSuccess && activeTab === "system" && (
                       <div className="flex items-center text-green-600 dark:text-green-400">
                         <CheckCircle2 className="h-4 w-4 mr-1.5" />

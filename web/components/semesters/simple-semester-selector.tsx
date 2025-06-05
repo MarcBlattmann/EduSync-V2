@@ -5,8 +5,9 @@
 
 'use client';
 
+import { useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useSemesters } from '@/hooks/use-semesters';
+import { useSemesters } from '@/contexts/semester-context';
 
 interface SimpleSemesterSelectorProps {
   value: string;
@@ -19,7 +20,24 @@ export function SimpleSemesterSelector({
   onValueChange, 
   showAllOption = true 
 }: SimpleSemesterSelectorProps) {
-  const { semesters, isLoading } = useSemesters();
+  const { semesters, isLoading, activeSemester } = useSemesters();
+
+  // Handle case where selected semester gets deleted
+  useEffect(() => {
+    if (value && value !== 'all') {
+      const semesterStillExists = semesters.find(s => s.id === value);
+      if (!semesterStillExists && semesters.length > 0) {
+        // Selected semester was deleted, fall back to active semester or 'all'
+        if (activeSemester) {
+          onValueChange(activeSemester.id);
+        } else if (showAllOption) {
+          onValueChange('all');
+        } else if (semesters.length > 0) {
+          onValueChange(semesters[0].id);
+        }
+      }
+    }
+  }, [semesters, value, onValueChange, activeSemester, showAllOption]);
 
   const formatDateRange = (startDate: string, endDate: string) => {
     const start = new Date(startDate).toLocaleDateString('en-US', { 

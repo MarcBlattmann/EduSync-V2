@@ -34,7 +34,8 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { useGradeSystem, getGradeColor, convertGrade } from "@/hooks/use-grade-system";
 import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
 import { useSemesterDefault, getDefaultSemesterId } from "@/hooks/use-semester-default";
-import { useSemesters } from "@/hooks/use-semesters";
+import { useSubjectPreferences } from "@/hooks/use-subject-preferences";
+import { useSemesters } from "@/contexts/semester-context";
 import { getSemesterIdFromDate } from "@/utils/semester-detection";
 import { ManageSemestersDialog } from "@/components/semesters/manage-semesters-dialog";
 import type { Semester } from "@/types/semester";
@@ -61,11 +62,11 @@ export default function Grades() {
   const [gradeToDelete, setGradeToDelete] = useState<string | null>(null);
   const [editingGrade, setEditingGrade] = useState<Grade | null>(null);
   const [averageGrade, setAverageGrade] = useState<number | null>(null);  const [subjectAverages, setSubjectAverages] = useState<Record<string, number>>({});
-  const [manageSemestersOpen, setManageSemestersOpen] = useState<boolean>(false);  const [selectedSemester, setSelectedSemester] = useState<Semester | null>(null);
-  // Use our custom hook for grade system
+  const [manageSemestersOpen, setManageSemestersOpen] = useState<boolean>(false);  const [selectedSemester, setSelectedSemester] = useState<Semester | null>(null);  // Use our custom hook for grade system
   const { gradeSystem } = useGradeSystem();
   const { displayLabel } = useDisplayPreferences();
   const { defaultSemester } = useSemesterDefault();
+  const { subjectFilter } = useSubjectPreferences();
   const { semesters, activeSemester } = useSemesters();
   const isMobile = useIsMobile();
 
@@ -82,8 +83,22 @@ export default function Grades() {
       if (semester) {
         setSelectedSemester(semester);
       }
+    }  }, [defaultSemester, semesters, activeSemester]);
+
+  // Handle case where selected semester gets deleted
+  useEffect(() => {
+    if (selectedSemester && semesters.length > 0) {
+      const semesterStillExists = semesters.find(s => s.id === selectedSemester.id);
+      if (!semesterStillExists) {
+        // Selected semester was deleted, fall back to active semester or all
+        if (activeSemester) {
+          setSelectedSemester(activeSemester);
+        } else {
+          setSelectedSemester(null); // Show all semesters
+        }
+      }
     }
-  }, [defaultSemester, semesters, activeSemester]);
+  }, [semesters, selectedSemester, activeSemester]);
   
   // Initialize Supabase client
   const supabase = createClient();
@@ -133,8 +148,7 @@ export default function Grades() {
       console.log(`Converted ${processedGrades.length} grades from ${standardGradeSystem} to ${gradeSystem} format`);
       
       setGrades(processedGrades);
-      
-      // Get unique subjects - fix for Set iteration issue
+        // Get unique subjects - fix for Set iteration issue
       const uniqueSubjectsSet = new Set<string>();
       processedGrades.forEach(grade => uniqueSubjectsSet.add(grade.subject));
       const uniqueSubjects = Array.from(uniqueSubjectsSet);
@@ -432,10 +446,33 @@ export default function Grades() {
   // Get current filtered grades and their statistics
   const filteredGrades = getFilteredGrades();
   const { averageGrade: currentAverageGrade, subjectAverages: currentSubjectAverages } = calculateStatistics(filteredGrades);
-
   // Handle semester selection change
   const handleSemesterChange = (semester: Semester | null) => {
     setSelectedSemester(semester);
+  };
+
+  // Get filtered subjects for the AddGradeDialog based on user preference
+  const getFilteredSubjects = () => {
+    if (subjectFilter === 'active-semester' && activeSemester) {
+      // Filter subjects to only show those from the active semester
+      const activeSemesterSubjects = new Set<string>();
+      grades.forEach(grade => {
+        // Check if grade belongs to active semester
+        if (grade.semester_id === activeSemester.id) {
+          activeSemesterSubjects.add(grade.subject);
+        } else if (!grade.semester_id && grade.date) {
+          // If no semester_id, check if date falls within active semester
+          const detectedSemesterId = getSemesterIdFromDate(grade.date, semesters, activeSemester);
+          if (detectedSemesterId === activeSemester.id) {
+            activeSemesterSubjects.add(grade.subject);
+          }
+        }
+      });
+      return Array.from(activeSemesterSubjects);
+    }
+    
+    // Default: return all subjects
+    return subjects;
   };
   
   // Note: We're now using the gradeSystem from the useGradeSystem() hook
@@ -643,12 +680,11 @@ export default function Grades() {
           </>
         )}
       </div>
-      
-      <AddGradeDialog 
+        <AddGradeDialog 
         open={dialogOpen} 
         onOpenChange={setDialogOpen}
         onAddGrade={handleAddGrade}
-        existingSubjects={subjects}
+        existingSubjects={getFilteredSubjects()}
         editingGrade={editingGrade}
         isEditing={!!editingGrade}
       />
@@ -668,10 +704,10 @@ export default function Grades() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
-            </AlertDialogAction>          </AlertDialogFooter>
+            </AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       <ManageSemestersDialog 
         open={manageSemestersOpen} 
         onOpenChange={setManageSemestersOpen} 

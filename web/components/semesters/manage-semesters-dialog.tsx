@@ -41,7 +41,8 @@ import {
   Calendar,
   MoreHorizontal,
   Search,
-  Plus
+  Plus,
+  Info
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -50,7 +51,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useSemesters } from '@/hooks/use-semesters';
+import { useSemesters } from '@/contexts/semester-context';
 import { EditSemesterDialog } from './edit-semester-dialog';
 import { CreateSemesterDialog } from './create-semester-dialog';
 import type { Semester } from '@/types/semester';
@@ -118,13 +119,21 @@ export function ManageSemestersDialog({ open, onOpenChange }: ManageSemestersDia
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
-          <DialogHeader>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">          <DialogHeader>
             <DialogTitle>Manage Semesters</DialogTitle>
             <DialogDescription>
               Edit, delete, or set active status for your semesters.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Info Message */}
+          <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              <strong>Note:</strong> After editing semesters, please reload the page to ensure all changes are properly applied throughout the application.
+            </p>
+          </div>
 
           <div className="space-y-4">
             {/* Search and New Semester Button */}
@@ -187,7 +196,8 @@ export function ManageSemestersDialog({ open, onOpenChange }: ManageSemestersDia
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {formatDateRange(semester.start_date, semester.end_date)}
-                        </TableCell>                        <TableCell>
+                        </TableCell>
+                        <TableCell>
                           {isCurrentlyActive(semester) ? (
                             <Badge variant="default">Active</Badge>
                           ) : (
@@ -200,7 +210,8 @@ export function ManageSemestersDialog({ open, onOpenChange }: ManageSemestersDia
                               <Button variant="ghost" size="sm">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
-                            </DropdownMenuTrigger>                            <DropdownMenuContent align="end">
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => handleEdit(semester)}>
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit

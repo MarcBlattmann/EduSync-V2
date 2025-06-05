@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, ChevronDown, Plus, Settings, Star } from 'lucide-react';
-import { useSemesters } from '@/hooks/use-semesters';
+import { useSemesters } from '@/contexts/semester-context';
 import { CreateSemesterDialog } from './create-semester-dialog';
 import { ManageSemestersDialog } from './manage-semesters-dialog';
 import type { Semester } from '@/types/semester';
@@ -43,13 +43,29 @@ export function SemesterSelector({
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
   const [selectedSemesterId, setSelectedSemesterId] = useState<string | null>(null);
-
   // Initialize selected semester to active semester when it changes
   useEffect(() => {
     if (activeSemester && !selectedSemesterId) {
       setSelectedSemesterId(activeSemester.id);
     }
   }, [activeSemester, selectedSemesterId]);
+
+  // Handle case where selected semester gets deleted
+  useEffect(() => {
+    if (selectedSemesterId && selectedSemesterId !== 'all') {
+      const semesterStillExists = semesters.find(s => s.id === selectedSemesterId);
+      if (!semesterStillExists) {
+        // Selected semester was deleted, fall back to active semester or 'all'
+        if (activeSemester) {
+          setSelectedSemesterId(activeSemester.id);
+          onSemesterChange?.(activeSemester);
+        } else {
+          setSelectedSemesterId(null);
+          onSemesterChange?.(null);
+        }
+      }
+    }
+  }, [semesters, selectedSemesterId, activeSemester, onSemesterChange]);
 
   const handleSemesterChange = (semesterId: string) => {
     if (semesterId === 'all') {

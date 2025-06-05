@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
 import { useGradeSystem } from "@/hooks/use-grade-system";
 import { useSemesterDefault, getDefaultSemesterId } from "@/hooks/use-semester-default";
-import { useSemesters } from "@/hooks/use-semesters";
+import { useSemesters } from "@/contexts/semester-context";
 import { getSemesterIdFromDate } from "@/utils/semester-detection";
 import { 
   Select,
@@ -92,13 +92,29 @@ function GradeStats({ userId }: { userId: string }) {
   const { defaultSemester } = useSemesterDefault();
   const { semesters, activeSemester } = useSemesters();
   const isMobile = useIsMobile();
-
   // Initialize semester selection based on user preference
   useEffect(() => {
     if (!defaultSemester || semesters.length === 0) return;
     
     const defaultId = getDefaultSemesterId(defaultSemester, semesters, activeSemester);
-    setSelectedSemesterId(defaultId);  }, [defaultSemester, semesters, activeSemester]);  // Simple hook that always uses vertical layout
+    setSelectedSemesterId(defaultId);  }, [defaultSemester, semesters, activeSemester]);
+
+  // Handle case where selected semester gets deleted
+  useEffect(() => {
+    if (selectedSemesterId && selectedSemesterId !== "all" && semesters.length > 0) {
+      const semesterStillExists = semesters.find(s => s.id === selectedSemesterId);
+      if (!semesterStillExists) {
+        // Selected semester was deleted, fall back to active semester or all
+        if (activeSemester) {
+          setSelectedSemesterId(activeSemester.id);
+        } else {
+          setSelectedSemesterId("all"); // Show all semesters
+        }
+      }
+    }
+  }, [semesters, selectedSemesterId, activeSemester]);
+
+  // Simple hook that always uses vertical layout
   const { isSmallScreen, triggerStyle, containerClasses, triggerClasses } = useSemesterSelectorWidth();
 
     useEffect(() => {

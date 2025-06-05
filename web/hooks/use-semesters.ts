@@ -65,18 +65,26 @@ export function useSemesters() {
     } finally {
       setIsLoading(false);
     }
-  };
-  // Create a new semester
+  };  // Create a new semester
   const createSemester = async (data: CreateSemesterData): Promise<boolean> => {
     try {
       const result = await createSemesterAction(data);
       
       if (result.success && result.data) {
         // Add to local state
-        setSemesters(prev => [result.data!, ...prev]);
-        
-        // Refresh to recalculate active semester
-        await fetchSemesters();
+        setSemesters(prev => {
+          const newSemesters = [result.data!, ...prev];
+          // Recalculate active semester
+          const today = new Date().toISOString().split('T')[0];
+          const currentActiveSemester = newSemesters.find(semester => {
+            const startDate = new Date(semester.start_date);
+            const endDate = new Date(semester.end_date);
+            const todayDate = new Date(today);
+            return todayDate >= startDate && todayDate <= endDate;
+          }) || null;
+          setActiveSemesterState(currentActiveSemester);
+          return newSemesters;
+        });
         
         return true;
       } else {
@@ -89,7 +97,6 @@ export function useSemesters() {
       return false;
     }
   };
-
   // Update an existing semester
   const updateSemester = async (id: string, data: UpdateSemesterData): Promise<boolean> => {
     try {
@@ -97,14 +104,21 @@ export function useSemesters() {
       
       if (result.success && result.data) {
         // Update local state
-        setSemesters(prev => 
-          prev.map(semester => 
+        setSemesters(prev => {
+          const updatedSemesters = prev.map(semester =>
             semester.id === id ? result.data! : semester
-          )
-        );
-        
-        // Refresh to recalculate active semester
-        await fetchSemesters();
+          );
+          // Recalculate active semester
+          const today = new Date().toISOString().split('T')[0];
+          const currentActiveSemester = updatedSemesters.find(semester => {
+            const startDate = new Date(semester.start_date);
+            const endDate = new Date(semester.end_date);
+            const todayDate = new Date(today);
+            return todayDate >= startDate && todayDate <= endDate;
+          }) || null;
+          setActiveSemesterState(currentActiveSemester);
+          return updatedSemesters;
+        });
         
         return true;
       } else {
@@ -116,18 +130,26 @@ export function useSemesters() {
       setError(errorMessage);
       return false;
     }
-  };
-  // Delete a semester
+  };  // Delete a semester
   const deleteSemester = async (id: string): Promise<boolean> => {
     try {
       const result = await deleteSemesterAction(id);
       
       if (result.success) {
         // Remove from local state
-        setSemesters(prev => prev.filter(semester => semester.id !== id));
-        
-        // Refresh to recalculate active semester
-        await fetchSemesters();
+        setSemesters(prev => {
+          const filteredSemesters = prev.filter(semester => semester.id !== id);
+          // Recalculate active semester
+          const today = new Date().toISOString().split('T')[0];
+          const currentActiveSemester = filteredSemesters.find(semester => {
+            const startDate = new Date(semester.start_date);
+            const endDate = new Date(semester.end_date);
+            const todayDate = new Date(today);
+            return todayDate >= startDate && todayDate <= endDate;
+          }) || null;
+          setActiveSemesterState(currentActiveSemester);
+          return filteredSemesters;
+        });
         
         return true;
       } else {

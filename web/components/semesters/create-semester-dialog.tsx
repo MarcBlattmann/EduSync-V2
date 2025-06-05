@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { useSemesters } from '@/hooks/use-semesters';
+import { useSemesters } from '@/contexts/semester-context';
 import type { CreateSemesterData } from '@/types/semester';
 
 interface CreateSemesterDialogProps {
