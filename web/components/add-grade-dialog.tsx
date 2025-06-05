@@ -181,7 +181,8 @@ export function AddGradeDialog({
       setSubject("");
       setCustomSubject("");
       setGrade(min); // Reset to min value for the current system
-      setGradeInput(min.toString()); // Reset the input value too      setDate(new Date().toISOString().split("T")[0]);
+      setGradeInput(min.toString()); // Reset the input value too
+      setDate(new Date().toISOString().split("T")[0]); // Reset the date to today
       setDescription("");
       setShowCustomSubject(false);
     } catch (error) {
