@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SemesterProvider } from "@/contexts/semester-context";
 import { usePathname } from "next/navigation";
 import { memo, useMemo } from "react";
 import dynamic from "next/dynamic";
@@ -27,16 +28,17 @@ function ProtectedLayoutBase({
   
   // Use memoization to avoid unnecessary re-renders of children content
   const memoizedChildren = useMemo(() => children, [pathname]);
-
   return (
     <SidebarProvider>
-      {/* Only load sidebar when needed with dynamic import */}
-      <MemoizedAppSidebar />
-      <SidebarInset>
-        <main className="h-screen flex flex-col">
-          {memoizedChildren}
-        </main>
-      </SidebarInset>
+      <SemesterProvider>
+        {/* Only load sidebar when needed with dynamic import */}
+        <MemoizedAppSidebar />
+        <SidebarInset>
+          <main className="h-screen flex flex-col">
+            {memoizedChildren}
+          </main>
+        </SidebarInset>
+      </SemesterProvider>
     </SidebarProvider>
   );
 }

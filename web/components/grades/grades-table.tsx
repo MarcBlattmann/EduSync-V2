@@ -31,6 +31,7 @@ interface Grade {
   grade: number;
   date: string;
   description?: string;
+  semester_id?: string;
   created_at: string;
 }
 
@@ -52,12 +53,10 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
   }>({
     key: "date",
     direction: "desc",
-  });
-  // Use the grade system hook instead of manual state management
+  });  // Use the grade system hook instead of manual state management
   const { gradeSystem: gradeSystemState } = useGradeSystem();
   const { displayLabel } = useDisplayPreferences();
-  
-  // Helper functions to apply formatting and colors based on the grade system
+    // Helper functions to apply formatting and colors based on the grade system
   const getGradeColorHelper = (grade: number): string => {
     return getGradeColor(grade, gradeSystemState);
   };
@@ -225,9 +224,7 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
             </>
           )}
         </div>
-      </div>
-
-      {/* Grades table */}
+      </div>      {/* Grades table */}
       <div className="rounded-md border">
         <Table className="[&_td]:py-2 [&_td]:px-4">
           <TableHeader>
@@ -247,8 +244,7 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
                 <div className="flex items-center justify-center">
                   Grade {renderSortIcon("grade")}
                 </div>
-              </TableHead>
-              <TableHead
+              </TableHead><TableHead
                 className="cursor-pointer w-[120px] py-2"
                 onClick={() => handleSort("date")}
               >
@@ -262,15 +258,15 @@ export function GradesTable({ grades, subjects, onEdit, onDelete }: GradesTableP
               )}
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {filteredGrades.length === 0 ? (
+          <TableBody>{filteredGrades.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={onEdit || onDelete ? 5 : 4} className="h-24 text-center">
                   No grades found matching the filters.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredGrades.map((grade) => (                <TableRow key={grade.id}>
+              filteredGrades.map((grade) => (
+                <TableRow key={grade.id}>
                   <TableCell className="font-medium">{grade.subject}</TableCell>
                   <TableCell className="text-center">
                     <span className={`font-semibold ${getGradeColorHelper(grade.grade)}`}>

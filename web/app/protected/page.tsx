@@ -8,10 +8,22 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UpcomingEvents } from "@/components/upcoming-events";
 import { Suspense, useEffect, useState } from "react";
-import { CalendarIcon, GraduationCapIcon } from "lucide-react";
+import { CalendarIcon, GraduationCapIcon, Calendar, Star } from "lucide-react";
 import Link from "next/link";
 import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
 import { useGradeSystem } from "@/hooks/use-grade-system";
+import { useSemesterDefault, getDefaultSemesterId } from "@/hooks/use-semester-default";
+import { useSemesters } from "@/contexts/semester-context";
+import { getSemesterIdFromDate } from "@/utils/semester-detection";
+import { 
+  Select,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-is-mobile";
+import { ResponsiveSelectContent } from "@/hooks/responsive-select";
+import { useSemesterSelectorWidth } from "@/hooks/use-semester-selector-width";
 
 // Define types for the grade data
 interface Grade {
@@ -21,6 +33,7 @@ interface Grade {
   grade: number;
   date: string;
   description?: string;
+  semester_id?: string;
   created_at: string;
 }
 
@@ -62,16 +75,49 @@ const getGradeColor = (grade: number): string => {
   return "text-red-600 dark:text-red-400";
 };
 
+// Helper function to check if a semester is currently active based on date
+const isCurrentlyActive = (semester: { start_date: string; end_date: string }) => {
+  const today = new Date();
+  const startDate = new Date(semester.start_date);
+  const endDate = new Date(semester.end_date);
+  return today >= startDate && today <= endDate;
+};
+
 // Component to fetch and display grade stats - client side fetching
 function GradeStats({ userId }: { userId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [gradeStats, setGradeStats] = useState<GradeStats | null>(null);
   const [error, setError] = useState(false);
-  const [summaryData, setSummaryData] = useState<GradeSummary[]>([]);
-  const { displayLabel } = useDisplayPreferences();
-  const { gradeSystem } = useGradeSystem();
-  
+  const [summaryData, setSummaryData] = useState<GradeSummary[]>([]);  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("all");  const { displayLabel } = useDisplayPreferences();  const { gradeSystem } = useGradeSystem();
+  const { defaultSemester } = useSemesterDefault();
+  const { semesters, activeSemester } = useSemesters();
+  const isMobile = useIsMobile();
+  // Initialize semester selection based on user preference
   useEffect(() => {
+    if (!defaultSemester || semesters.length === 0) return;
+    
+    const defaultId = getDefaultSemesterId(defaultSemester, semesters, activeSemester);
+    setSelectedSemesterId(defaultId);  }, [defaultSemester, semesters, activeSemester]);
+
+  // Handle case where selected semester gets deleted
+  useEffect(() => {
+    if (selectedSemesterId && selectedSemesterId !== "all" && semesters.length > 0) {
+      const semesterStillExists = semesters.find(s => s.id === selectedSemesterId);
+      if (!semesterStillExists) {
+        // Selected semester was deleted, fall back to active semester or all
+        if (activeSemester) {
+          setSelectedSemesterId(activeSemester.id);
+        } else {
+          setSelectedSemesterId("all"); // Show all semesters
+        }
+      }
+    }
+  }, [semesters, selectedSemesterId, activeSemester]);
+
+  // Simple hook that always uses vertical layout
+  const { isSmallScreen, triggerStyle, containerClasses, triggerClasses } = useSemesterSelectorWidth();
+
+    useEffect(() => {
     async function fetchGradeStats() {
       try {
         setIsLoading(true);
@@ -87,19 +133,42 @@ function GradeStats({ userId }: { userId: string }) {
           setIsLoading(false);
           return;
         }
-        
-        // Fallback to direct query if stored procedure fails
-        const { data, error } = await supabase
+          // Fallback to direct query with semester filtering
+        let query = supabase
           .from('grades')
-          .select('subject, grade')
-          .eq('user_id', userId)
-          .limit(50);
+          .select('subject, grade, semester_id, date')
+          .eq('user_id', userId);
+        
+        const { data, error } = await query.limit(50);
         
         if (error) {
           console.error('Error fetching grades:', error);
           setError(true);
         } else {
-          setSummaryData(data || []);
+          // Apply semester filtering with the same logic as grades page
+          let filteredData = data || [];
+          
+          if (selectedSemesterId !== "all") {
+            const selectedSemester = semesters.find(s => s.id === selectedSemesterId);
+            if (selectedSemester) {
+              filteredData = filteredData.filter(grade => {
+                // Check if grade has semester_id that matches selected semester
+                if (grade.semester_id === selectedSemester.id) {
+                  return true;
+                }
+                
+                // If grade doesn't have semester_id, try to determine it from date
+                if (!grade.semester_id && grade.date) {
+                  const detectedSemesterId = getSemesterIdFromDate(grade.date, semesters, activeSemester);
+                  return detectedSemesterId === selectedSemester.id;
+                }
+                
+                return false;
+              });
+            }
+          }
+          
+          setSummaryData(filteredData);
         }
       } catch (e) {
         console.error('Error in GradeStats component:', e);
@@ -110,7 +179,7 @@ function GradeStats({ userId }: { userId: string }) {
     }
     
     fetchGradeStats();
-  }, [userId]);
+  }, [userId, selectedSemesterId]);
 
   if (isLoading) {
     return <GradeStatsLoading />;
@@ -118,15 +187,41 @@ function GradeStats({ userId }: { userId: string }) {
 
   if (error) {
     return <GradeStatsError />;
-  }
-  
-  // If we have grade stats from stored procedure
-  if (gradeStats) {
-    return (
-      <Card className="flex flex-col">
-        <CardHeader className="pb-2">
-          <CardTitle>Grade Overview</CardTitle>
-          <CardDescription>Your current academic performance</CardDescription>
+  }  // If we have grade stats from stored procedure
+  if (gradeStats) {    return (      <Card className="flex flex-col">        <CardHeader className="pb-2">
+          <div className="flex flex-wrap gap-3">
+            <div className="flex-1 min-w-[300px]">
+              <CardTitle className="text-lg font-semibold">Grade Overview</CardTitle>
+              <CardDescription className="text-sm text-muted-foreground">Your current academic performance</CardDescription>
+            </div>
+            {semesters.length > 0 && (
+              <div className="flex-1 min-w-[200px] w-full sm:w-auto sm:max-w-xs lg:max-w-none sm:flex sm:justify-end">
+                <Select
+                  value={selectedSemesterId}
+                  onValueChange={setSelectedSemesterId}
+                >
+                  <SelectTrigger 
+                    className="px-3 text-ellipsis w-full"
+                    style={triggerStyle}
+                  >
+                    <Calendar className="h-4 w-4 flex-shrink-0 mr-2" />
+                    <SelectValue placeholder="Select semester" className="truncate" />
+                  </SelectTrigger>
+                  <ResponsiveSelectContent>
+                    <SelectItem value="all" className="px-3">All Semesters</SelectItem>
+                    {semesters.map((semester) => (
+                      <SelectItem key={semester.id} value={semester.id} className="px-3">
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="truncate">{semester.name}</span>
+                          {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0 ml-auto" />}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </ResponsiveSelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col pb-6">
           {gradeStats.total_entries === 0 ? (
@@ -175,14 +270,44 @@ function GradeStats({ userId }: { userId: string }) {
       </Card>
     );
   }
-  
-  // Handle direct query results if no stored procedure
+    // Handle direct query results if no stored procedure or summary data  
   if (summaryData.length === 0) {
     return (
       <Card className="flex flex-col">
         <CardHeader className="pb-2">
-          <CardTitle>Grade Overview</CardTitle>
-          <CardDescription>Your current academic performance</CardDescription>
+          <div className="flex flex-wrap gap-3">
+            <div className="flex-1 min-w-[300px]">
+              <CardTitle className="text-lg font-semibold">Grade Overview</CardTitle>
+              <CardDescription className="text-sm text-muted-foreground">Your current academic performance</CardDescription>
+            </div>
+            {semesters.length > 0 && (
+              <div className="flex-1 min-w-[200px] w-full sm:w-auto sm:max-w-xs lg:max-w-none sm:flex sm:justify-end">
+                <Select
+                  value={selectedSemesterId}
+                  onValueChange={setSelectedSemesterId}
+                >
+                  <SelectTrigger 
+                    className="px-3 text-ellipsis w-full"
+                    style={triggerStyle}
+                  >
+                    <Calendar className="h-4 w-4 flex-shrink-0 mr-2" />
+                    <SelectValue placeholder="Select semester" className="truncate" />
+                  </SelectTrigger>
+                  <ResponsiveSelectContent>
+                    <SelectItem value="all" className="px-3">All Semesters</SelectItem>
+                    {semesters.map((semester) => (
+                      <SelectItem key={semester.id} value={semester.id} className="px-3">
+                        <div className="flex items-center gap-2 w-full">
+                          <span className="truncate">{semester.name}</span>
+                          {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0 ml-auto" />}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </ResponsiveSelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col pb-6">
           <Link href="/protected/grades" className="flex-1 flex flex-col h-full">
@@ -203,7 +328,7 @@ function GradeStats({ userId }: { userId: string }) {
   const sum = summaryData.reduce((acc: number, grade: GradeSummary) => acc + grade.grade, 0);
   const averageGrade = parseFloat((sum / totalEntries).toFixed(2));
   
-  // Calculate subject averages - do this once rather than repeatedly in render
+  // Calculate subject averages 
   const subjectTotals: Record<string, SubjectTotal> = {};
   const subjectAverages: Record<string, number> = {};
   
@@ -214,18 +339,45 @@ function GradeStats({ userId }: { userId: string }) {
     subjectTotals[grade.subject].sum += grade.grade;
     subjectTotals[grade.subject].count += 1;
   });
-  
   Object.entries(subjectTotals).forEach(([subject, data]) => {
-    subjectAverages[subject] = parseFloat((data.sum / data.count).toFixed(2));
-  });
-  
-  return (
+    subjectAverages[subject] = parseFloat((data.sum / data.count).toFixed(2));  });  return (
     <Card className="flex flex-col">
       <CardHeader className="pb-2">
-        <CardTitle>Grade Overview</CardTitle>
-        <CardDescription>Your current academic performance</CardDescription>
+        <div className="flex flex-wrap gap-3">
+          <div className="flex-1 min-w-[300px]">
+            <CardTitle className="text-lg font-semibold">Grade Overview</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">Your current academic performance</CardDescription>
+          </div>
+          {semesters.length > 0 && (
+            <div className="flex-1 min-w-[200px] w-full sm:w-auto sm:max-w-xs lg:max-w-none sm:flex sm:justify-end">
+              <Select
+                value={selectedSemesterId}
+                onValueChange={setSelectedSemesterId}
+              >
+                <SelectTrigger 
+                  className="px-3 text-ellipsis w-full"
+                  style={triggerStyle}
+                >
+                  <Calendar className="h-4 w-4 flex-shrink-0 mr-2" />
+                  <SelectValue placeholder="Select semester" className="truncate" />
+                </SelectTrigger>
+                <ResponsiveSelectContent>
+                  <SelectItem value="all" className="px-3">All Semesters</SelectItem>
+                  {semesters.map((semester) => (
+                    <SelectItem key={semester.id} value={semester.id} className="px-3">
+                      <div className="flex items-center gap-2 w-full">
+                        <span className="truncate">{semester.name}</span>
+                        {isCurrentlyActive(semester) && <Star className="h-3 w-3 fill-current flex-shrink-0 ml-auto" />}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </ResponsiveSelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col pb-6">        <div className="flex justify-between items-center mb-4">
+      <CardContent className="flex-grow flex flex-col pb-6"><div className="flex justify-between items-center mb-4">
           <div>
             <p className="text-sm text-muted-foreground">{getDisplayLabel(displayLabel)}</p>
             <div className={`text-3xl font-bold ${getGradeColor(averageGrade)}`}>

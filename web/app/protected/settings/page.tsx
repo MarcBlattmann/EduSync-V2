@@ -16,6 +16,9 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { useGradeSystem, GradeSystem } from "@/hooks/use-grade-system";
 import { useDisplayPreferences, DisplayLabelPreference } from "@/hooks/use-display-preferences";
+import { useSemesterDefault, getSemesterDefaultLabel } from "@/hooks/use-semester-default";
+import { useSubjectPreferences, getSubjectFilterLabel } from "@/hooks/use-subject-preferences";
+import { useSemesters } from "@/contexts/semester-context";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { v4 as uuidv4 } from 'uuid';
@@ -27,9 +30,11 @@ export default function Settings() {
   const [fullName, setFullName] = useState("");
   const [avatar, setAvatar] = useState("");
   const [activeTab, setActiveTab] = useState("profile");  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const { gradeSystem, setGradeSystem, isLoading: isGradeSystemLoading } = useGradeSystem(); // Use the grade system hook instead of local state
+  const [saveSuccess, setSaveSuccess] = useState(false);  const { gradeSystem, setGradeSystem, isLoading: isGradeSystemLoading } = useGradeSystem(); // Use the grade system hook instead of local state
   const { displayLabel, setDisplayLabel, isLoading: isDisplayPreferencesLoading } = useDisplayPreferences(); // Use the display preferences hook
+  const { defaultSemester, setDefaultSemester, isLoading: isSemesterDefaultLoading } = useSemesterDefault(); // Use the semester default hook
+  const { subjectFilter, setSubjectFilter, isLoading: isSubjectFilterLoading } = useSubjectPreferences(); // Use the subject filter hook
+  const { semesters, activeSemester, isLoading: isSemestersLoading } = useSemesters(); // Get semesters for the dropdown
 
   const router = useRouter();
   const supabase = createClient();
@@ -127,7 +132,6 @@ export default function Settings() {
       setIsSaving(false);
     }
   };
-
   // Save display label preference using our hook
   const handleDisplayLabelChange = async (newLabel: DisplayLabelPreference) => {
     setIsSaving(true);
@@ -146,6 +150,51 @@ export default function Settings() {
     } catch (error) {
       console.error("Error saving display label preference:", error);
       alert("Failed to save display label preference");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  // Save semester default preference using our hook
+  const handleSemesterDefaultChange = async (newDefault: string) => {
+    setIsSaving(true);
+    
+    try {
+      // Use the setDefaultSemester function from our hook
+      // This will update both localStorage and Supabase
+      const success = await setDefaultSemester(newDefault);
+      
+      if (!success) {
+        throw new Error('Failed to save semester default preference');
+      }
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error saving semester default preference:", error);
+      alert("Failed to save semester default preference");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Save subject filter preference using our hook
+  const handleSubjectFilterChange = async (newFilter: string) => {
+    setIsSaving(true);
+    
+    try {
+      // Use the setSubjectFilter function from our hook
+      // This will update both localStorage and Supabase
+      const success = await setSubjectFilter(newFilter as 'all' | 'active-semester');
+      
+      if (!success) {
+        throw new Error('Failed to save subject filter preference');
+      }
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error saving subject filter preference:", error);
+      alert("Failed to save subject filter preference");
     } finally {
       setIsSaving(false);
     }
@@ -403,123 +452,278 @@ export default function Settings() {
                 </Card>
               </div>
             )}
-            
-            {/* System Settings */}
+              {/* System Settings */}
             {activeTab === "system" && (
               <div className="space-y-6">
+                {/* Grade System Section */}
                 <Card>
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <Shield className="h-5 w-5 text-primary" />
-                      <CardTitle>System Preferences</CardTitle>
+                      <CardTitle>Grade System</CardTitle>
                     </div>
                     <CardDescription>
-                      Set your preferred grading system
+                      Choose the grading system that matches your educational institution
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">                    <div>
-                      <h4 className="font-medium mb-3">Grade System</h4>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl">
-                        <button
-                          className={cn(
-                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
-                            gradeSystem === '6best' ? 'border-primary bg-accent/50' : ''
-                          )}
-                          onClick={() => handleGradeSystemChange('6best')}
-                          type="button"
-                        >
-                          <span className="text-lg font-bold">6</span>
-                          <span className="text-xs">6 is best</span>
-                        </button>
-                        <button
-                          className={cn(
-                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
-                            gradeSystem === '1best' ? 'border-primary bg-accent/50' : ''
-                          )}
-                          onClick={() => handleGradeSystemChange('1best')}
-                          type="button"
-                        >
-                          <span className="text-lg font-bold">1</span>
-                          <span className="text-xs">1 is best</span>
-                        </button>
-                        <button
-                          className={cn(
-                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
-                            gradeSystem === 'ib' ? 'border-primary bg-accent/50' : ''
-                          )}
-                          onClick={() => handleGradeSystemChange('ib')}
-                          type="button"
-                        >
-                          <span className="text-lg font-bold">7</span>
-                          <span className="text-xs">IB (1-7)</span>
-                        </button>
-                        <button
-                          className={cn(
-                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
-                            gradeSystem === 'american' ? 'border-primary bg-accent/50' : ''
-                          )}
-                          onClick={() => handleGradeSystemChange('american')}
-                          type="button"
-                        >
-                          <span className="text-lg font-bold">A-F</span>                        <span className="text-xs">American</span>
-                        </button>
-                        <button
-                          className={cn(
-                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
-                            gradeSystem === 'percentage' ? 'border-primary bg-accent/50' : ''
-                          )}
-                          onClick={() => handleGradeSystemChange('percentage')}
-                          type="button"
-                        >
-                          <span className="text-lg font-bold">%</span>
-                          <span className="text-xs">Percentage</span>
-                        </button>                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">Choose the grading system that matches your educational institution.</p>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <button
+                        className={cn(
+                          'border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                          gradeSystem === '6best' ? 'border-primary bg-accent/50' : ''
+                        )}
+                        onClick={() => handleGradeSystemChange('6best')}
+                        type="button"
+                      >
+                        <span className="text-lg font-bold">6</span>
+                        <span className="text-xs text-center">6 is best</span>
+                      </button>
+                      <button
+                        className={cn(
+                          'border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                          gradeSystem === '1best' ? 'border-primary bg-accent/50' : ''
+                        )}
+                        onClick={() => handleGradeSystemChange('1best')}
+                        type="button"
+                      >
+                        <span className="text-lg font-bold">1</span>
+                        <span className="text-xs text-center">1 is best</span>
+                      </button>
+                      <button
+                        className={cn(
+                          'border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                          gradeSystem === 'ib' ? 'border-primary bg-accent/50' : ''
+                        )}
+                        onClick={() => handleGradeSystemChange('ib')}
+                        type="button"
+                      >
+                        <span className="text-lg font-bold">7</span>
+                        <span className="text-xs text-center">IB (1-7)</span>
+                      </button>
+                      <button
+                        className={cn(
+                          'border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                          gradeSystem === 'american' ? 'border-primary bg-accent/50' : ''
+                        )}
+                        onClick={() => handleGradeSystemChange('american')}
+                        type="button"
+                      >
+                        <span className="text-lg font-bold">A-F</span>
+                        <span className="text-xs text-center">American</span>
+                      </button>
+                      <button
+                        className={cn(
+                          'border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                          gradeSystem === 'percentage' ? 'border-primary bg-accent/50' : ''
+                        )}
+                        onClick={() => handleGradeSystemChange('percentage')}
+                        type="button"
+                      >
+                        <span className="text-lg font-bold">%</span>
+                        <span className="text-xs text-center">Percentage</span>
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Display Preferences Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Display Preferences</CardTitle>
+                    <CardDescription>
+                      Customize how grades are displayed throughout the application
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <button
+                        className={cn(
+                          'border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                          displayLabel === 'averageGrade' ? 'border-primary bg-accent/50' : ''
+                        )}
+                        onClick={() => handleDisplayLabelChange('averageGrade')}
+                        type="button"
+                      >
+                        <span className="text-sm font-medium">Average Grade</span>
+                        <span className="text-xs text-muted-foreground text-center">Show grades in original format</span>
+                      </button>
+                      <button
+                        className={cn(
+                          'border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
+                          displayLabel === 'gpa' ? 'border-primary bg-accent/50' : ''
+                        )}
+                        onClick={() => handleDisplayLabelChange('gpa')}
+                        type="button"
+                      >
+                        <span className="text-sm font-medium">GPA</span>
+                        <span className="text-xs text-muted-foreground text-center">Convert to 4.0 scale</span>
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Default Filters Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Default Filters</CardTitle>
+                    <CardDescription>
+                      Set your preferred default selections for viewing grades
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Default Semester */}
+                    <div>
+                      <h4 className="font-medium mb-3 text-sm">Default Semester Selection</h4>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button
+                            className={cn(
+                              'border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:border-primary transition-colors',
+                              defaultSemester === 'all' ? 'border-primary bg-accent/50' : ''
+                            )}
+                            onClick={() => handleSemesterDefaultChange('all')}
+                            type="button"
+                          >
+                            <div className="flex flex-col items-start">
+                              <span className="text-sm font-medium">All Semesters</span>
+                              <span className="text-xs text-muted-foreground">Show all time periods</span>
+                            </div>
+                            {defaultSemester === 'all' && (
+                              <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                            )}
+                          </button>
+                          
+                          <button
+                            className={cn(
+                              'border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:border-primary transition-colors',
+                              defaultSemester === 'active' ? 'border-primary bg-accent/50' : ''
+                            )}
+                            onClick={() => handleSemesterDefaultChange('active')}
+                            type="button"
+                          >
+                            <div className="flex flex-col items-start">
+                              <span className="text-sm font-medium">Active Semester</span>
+                              <span className="text-xs text-muted-foreground">
+                                {activeSemester ? `Currently: ${activeSemester.name}` : 'Current semester'}
+                              </span>
+                            </div>
+                            {defaultSemester === 'active' && (
+                              <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                            )}
+                          </button>
+                        </div>
+
+                        {semesters.length > 0 && (
+                          <div>
+                            <h5 className="text-xs text-muted-foreground font-medium mb-2">Specific Semester:</h5>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {semesters.map((semester) => (
+                                <button
+                                  key={semester.id}
+                                  className={cn(
+                                    'border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:border-primary transition-colors text-left',
+                                    defaultSemester === semester.id ? 'border-primary bg-accent/50' : ''
+                                  )}
+                                  onClick={() => handleSemesterDefaultChange(semester.id)}
+                                  type="button"
+                                >
+                                  <div className="flex flex-col items-start min-w-0 flex-1">
+                                    <span className="text-sm font-medium truncate w-full">{semester.name}</span>
+                                    <span className="text-xs text-muted-foreground truncate w-full">
+                                      {new Date(semester.start_date).toLocaleDateString('en-US', { 
+                                        month: 'short', 
+                                        year: 'numeric' 
+                                      })} - {new Date(semester.end_date).toLocaleDateString('en-US', { 
+                                        month: 'short', 
+                                        year: 'numeric' 
+                                      })}
+                                    </span>
+                                  </div>
+                                  {defaultSemester === semester.id && (
+                                    <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 ml-2" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        Applies to the Grade Overview and Grades page default view.
+                      </p>
                     </div>
 
+                    <Separator />
+
+                    {/* Subject Filter */}
                     <div>
-                      <h4 className="font-medium mb-3">Display Label Preference</h4>
-                      <div className="grid grid-cols-2 gap-3 max-w-md">
+                      <h4 className="font-medium mb-3 text-sm">Subject Filter Preference</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <button
                           className={cn(
-                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
-                            displayLabel === 'averageGrade' ? 'border-primary bg-accent/50' : ''
+                            'border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:border-primary transition-colors',
+                            subjectFilter === 'all' ? 'border-primary bg-accent/50' : ''
                           )}
-                          onClick={() => handleDisplayLabelChange('averageGrade')}
+                          onClick={() => handleSubjectFilterChange('all')}
                           type="button"
                         >
-                          <span className="text-sm font-medium">Average Grade</span>
-                          <span className="text-xs text-muted-foreground">Standard label</span>
+                          <div className="flex flex-col items-start">
+                            <span className="text-sm font-medium">All Subjects</span>
+                            <span className="text-xs text-muted-foreground">From all semesters</span>
+                          </div>
+                          {subjectFilter === 'all' && (
+                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                          )}
                         </button>
+                        
                         <button
                           className={cn(
-                            'border rounded-lg p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-primary transition-colors',
-                            displayLabel === 'gpa' ? 'border-primary bg-accent/50' : ''
+                            'border rounded-lg p-3 flex items-center justify-between cursor-pointer hover:border-primary transition-colors',
+                            subjectFilter === 'active-semester' ? 'border-primary bg-accent/50' : ''
                           )}
-                          onClick={() => handleDisplayLabelChange('gpa')}
+                          onClick={() => handleSubjectFilterChange('active-semester')}
                           type="button"
                         >
-                          <span className="text-sm font-medium">GPA</span>
-                          <span className="text-xs text-muted-foreground">Grade Point Average</span>
+                          <div className="flex flex-col items-start">
+                            <span className="text-sm font-medium">Active Semester Only</span>
+                            <span className="text-xs text-muted-foreground">
+                              {activeSemester ? `From ${activeSemester.name}` : 'From current semester'}
+                            </span>
+                          </div>
+                          {subjectFilter === 'active-semester' && (
+                            <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                          )}
                         </button>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-2">Choose how grade averages are labeled in the interface. This only affects the display label, not the calculation.</p>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        Controls which subjects appear in the Add Grade dialog dropdown.
+                      </p>
                     </div>
-                  </CardContent>                  <CardFooter className="border-t px-6 py-4 flex justify-between items-center">
-                    {saveSuccess && activeTab === "system" && (
-                      <div className="flex items-center text-green-600 dark:text-green-400">
-                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                        <span className="text-sm">Preferences saved</span>
-                      </div>
-                    )}
-                    {isSaving && activeTab === "system" && (
-                      <div className="flex items-center">
-                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                        <span className="text-sm">Saving...</span>
-                      </div>
-                    )}
-                  </CardFooter>
+                  </CardContent>
                 </Card>
+
+                {/* Status Footer */}
+                {(saveSuccess || isSaving) && (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex justify-center">
+                        {saveSuccess && (
+                          <div className="flex items-center text-green-600 dark:text-green-400">
+                            <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                            <span className="text-sm">Preferences saved successfully</span>
+                          </div>
+                        )}
+                        {isSaving && (
+                          <div className="flex items-center text-muted-foreground">
+                            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                            <span className="text-sm">Saving preferences...</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
           </div>

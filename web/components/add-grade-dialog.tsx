@@ -21,18 +21,18 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { useGradeSystem, getGradeRange } from "@/hooks/use-grade-system";
+import { useSemesters } from "@/hooks/use-semesters";
+import { getSemesterIdFromDate, getSemesterDetectionInfo } from "@/utils/semester-detection";
 
 interface AddGradeProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAddGrade: (grade: {
+  onOpenChange: (open: boolean) => void;  onAddGrade: (grade: {
     subject: string;
     grade: number;
     date: string;
     description: string;
   }) => void;
-  existingSubjects: string[];
-  editingGrade?: {
+  existingSubjects: string[];  editingGrade?: {
     id: string;
     subject: string;
     grade: number;
@@ -54,11 +54,13 @@ export function AddGradeDialog({
   const [subject, setSubject] = useState("");
   const [customSubject, setCustomSubject] = useState("");
   const [grade, setGrade] = useState<number>(1);
-  const [gradeInput, setGradeInput] = useState<string>("1");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [gradeInput, setGradeInput] = useState<string>("1");  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
-  const [showCustomSubject, setShowCustomSubject] = useState(false);  // Use our centralized grade system hook
-  const { gradeSystem: gradeSystemState } = useGradeSystem();  // Use our imported getGradeRange utility
+  const [showCustomSubject, setShowCustomSubject] = useState(false);
+
+  // Use our centralized grade system hook
+  const { gradeSystem: gradeSystemState } = useGradeSystem();
+  const { semesters, activeSemester } = useSemesters();// Use our imported getGradeRange utility
   const gradeRangeInfo = getGradeRange(gradeSystemState);
   const { min, max, step } = gradeRangeInfo;
   
@@ -94,9 +96,7 @@ export function AddGradeDialog({
       
       // Set the grade value from the existing grade - ensure proper decimal display
       const roundedGrade = Math.round(editingGrade.grade * 100) / 100;
-      setGrade(roundedGrade);
-      setGradeInput(roundedGrade.toString());
-      setDate(editingGrade.date);
+      setGrade(roundedGrade);      setGradeInput(roundedGrade.toString());      setDate(editingGrade.date);
       setDescription(editingGrade.description || ''); // Added fallback for undefined
     } else {
       // Reset form when not editing - use appropriate defaults for the current grade system
@@ -104,7 +104,7 @@ export function AddGradeDialog({
       setCustomSubject("");
       
       // Default to the middle of the grading scale based on the system
-      let defaultGrade = min;      if (gradeSystemState === 'percentage') {
+      let defaultGrade = min;if (gradeSystemState === 'percentage') {
         defaultGrade = 75; // Default to C for percentage
       } else if (gradeSystemState === 'american') {
         defaultGrade = 3.0; // Default to B for American
@@ -121,7 +121,7 @@ export function AddGradeDialog({
       setDescription("");
       setShowCustomSubject(false);
     }
-  }, [editingGrade, existingSubjects, open, min, max, gradeSystemState]);  const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  }, [editingGrade, existingSubjects, open, min, max, gradeSystemState, activeSemester]);  const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setGradeInput(value); // Always update the string value for the input
 
@@ -163,29 +163,26 @@ export function AddGradeDialog({
       
       // Ensure the grade is within the valid range for the current system
       validatedGrade = Math.min(Math.max(validatedGrade, min), max);
-      
-      // Log what's being submitted for debugging
+        // Log what's being submitted for debugging
       console.log("Submitting grade:", {
         subject: selectedSubject,
         grade: validatedGrade,
         date,
         description,
-        gradeSystem: gradeSystemState
+        gradeSystem: gradeSystemState,
+        detectedSemester: getSemesterDetectionInfo(date, semesters, activeSemester)
       });
-      
-      onAddGrade({
+        onAddGrade({
         subject: selectedSubject,
         grade: validatedGrade,
         date,
         description,
-      });
-  
-      // Reset form
+      });// Reset form
       setSubject("");
       setCustomSubject("");
       setGrade(min); // Reset to min value for the current system
       setGradeInput(min.toString()); // Reset the input value too
-      setDate(new Date().toISOString().split("T")[0]);
+      setDate(new Date().toISOString().split("T")[0]); // Reset the date to today
       setDescription("");
       setShowCustomSubject(false);
     } catch (error) {
@@ -279,8 +276,7 @@ export function AddGradeDialog({
                 onChange={(e) => setDate(e.target.value)}
                 required
               />
-            </div>
-            <div className="grid gap-2">
+            </div>            <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
               <Input
                 id="description"
