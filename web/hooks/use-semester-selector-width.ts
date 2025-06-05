@@ -32,8 +32,8 @@ export function useSemesterSelectorWidth() {
       width: '100%',
       maxWidth: '100%'
     } : {
-      width: 'auto',
-      minWidth: '200px'
+      width: '100%',
+      minWidth: '100%'
     },
     containerClasses: isSmallScreen ? 'w-full' : 'flex-shrink-0',
     triggerClasses: isSmallScreen ? 'w-full' : 'w-auto'
