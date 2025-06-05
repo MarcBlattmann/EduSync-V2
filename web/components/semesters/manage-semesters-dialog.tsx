@@ -161,7 +161,8 @@ export function ManageSemestersDialog({ open, onOpenChange }: ManageSemestersDia
                     <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>                  {isLoading ? (
+                <TableBody>
+                  {isLoading ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-6">
                         Loading semesters...
