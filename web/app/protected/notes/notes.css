@@ -358,7 +358,8 @@ input:focus,
   font-weight: 600;
 }
 
-.ProseMirror img {
+.ProseMirror img,
+.note-viewer img {
   max-width: 100%;
   height: auto;
   border-radius: 0.375rem;
