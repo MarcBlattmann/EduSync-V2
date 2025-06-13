@@ -103,15 +103,13 @@ function NotesContent() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const [createFolderDialogOpen, setCreateFolderDialogOpen] = useState(false);
-  const [createNoteDialogOpen, setCreateNoteDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [createNoteDialogOpen, setCreateNoteDialogOpen] = useState(false);  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [shareNoteDialogOpen, setShareNoteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'note' | 'folder', id: string } | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [newNoteName, setNewNoteName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [editMode, setEditMode] = useState(false);
-  const [showFolderAlert, setShowFolderAlert] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [editorInstance, setEditorInstance] = useState<any>(null);
     // Resizable sidebar state
@@ -260,15 +258,9 @@ function NotesContent() {
       }
     }
   };
-
   // Create new note
   const handleCreateNote = async () => {
     if (!newNoteName.trim()) return;
-    if (!selectedFolder) {
-      setShowFolderAlert(true);
-      setTimeout(() => setShowFolderAlert(false), 3000);
-      return;
-    }
     
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -520,7 +512,13 @@ function NotesContent() {
                   )}
                 </button>                <div                  className="flex items-center gap-2 flex-1 p-1 pl-2"
                   onClick={() => {
-                    setSelectedFolder(folder.id);
+                    // Toggle folder selection - unselect if clicking on already selected folder
+                    if (selectedFolder === folder.id) {
+                      setSelectedFolder(null);
+                    } else {
+                      setSelectedFolder(folder.id);
+                    }
+                    
                     // Clear any search query when selecting a folder
                     if (searchQuery) {
                       setSearchQuery('');
@@ -529,8 +527,8 @@ function NotesContent() {
                     if (selectedNote) {
                       setSelectedNote(null);
                     }
-                    // For mobile, automatically expand the folder when selected
-                    if (!expandedFolders[folder.id]) {
+                    // For mobile, automatically expand the folder when selected (not when unselected)
+                    if (selectedFolder !== folder.id && !expandedFolders[folder.id]) {
                       toggleFolderExpand(folder.id);
                     }
                     // On mobile, close the sidebar after selecting a folder
@@ -538,7 +536,7 @@ function NotesContent() {
                       closeSidebar();
                     }
                   }}
-                >                  <Folder className="h-4 w-4 text-muted-foreground" />
+                ><Folder className="h-4 w-4 text-muted-foreground" />
                   <span className={cn(
                     "text-sm font-medium truncate",
                     hasContent ? "folder-with-content" : "folder-empty"
@@ -718,9 +716,7 @@ function NotesContent() {
         title={selectedNote ? selectedNote.title : searchQuery ? "Search Results" : "Notes"} 
         showBackButton={!!selectedNote}
         onBackClick={() => setSelectedNote(null)}
-      />
-      
-      {/* Mobile sidebar */}
+      />      {/* Mobile sidebar */}
       <MobileSidebar title="Folders">
         {renderFolderTree(null)}
         
@@ -729,16 +725,6 @@ function NotesContent() {
             No folders yet. Create your first folder to organize your notes.
           </div>
         )}
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setCreateFolderDialogOpen(true)} 
-          className="w-full mt-4"
-        >
-          <FolderPlus className="h-4 w-4 mr-2" />
-          New Folder
-        </Button>
       </MobileSidebar>
       
       <div className={cn(
@@ -765,15 +751,9 @@ function NotesContent() {
                   <span className="sr-only">Clear search</span>
                 </button>
               )}
-            </div>
-            <div className="flex gap-2 mt-2 sm:mt-0">
+            </div>            <div className="flex gap-2 mt-2 sm:mt-0">
               <Button size="sm" onClick={() => {
-                if (selectedFolder) {
-                  setCreateNoteDialogOpen(true);
-                } else {
-                  setShowFolderAlert(true);
-                  setTimeout(() => setShowFolderAlert(false), 3000);
-                }
+                setCreateNoteDialogOpen(true);
               }} className="flex gap-2">
                 <Plus className="h-4 w-4" />
                 <span>New Note</span>
@@ -807,14 +787,8 @@ function NotesContent() {
                   <span className="sr-only">Clear search</span>
                 </button>
               )}
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => {
-              if (selectedFolder) {
-                setCreateNoteDialogOpen(true);
-              } else {
-                setShowFolderAlert(true);
-                setTimeout(() => setShowFolderAlert(false), 3000);
-              }
+            </div>            <Button variant="ghost" size="sm" onClick={() => {
+              setCreateNoteDialogOpen(true);
             }} className="h-9 w-9 p-0">
               <Plus className="h-5 w-5" />
               <span className="sr-only">New Note</span>
@@ -830,15 +804,25 @@ function NotesContent() {
             )}
             style={{ width: sidebarWidth }}
           >
-            <div className="folder-tree-container flex-1">
+            <div className="folder-tree-container flex-1" onClick={(e) => {
+              // Only unselect if clicking directly on the container, not on folder elements
+              if (e.target === e.currentTarget) {
+                setSelectedFolder(null);
+                if (searchQuery) {
+                  setSearchQuery('');
+                }
+                if (selectedNote) {
+                  setSelectedNote(null);
+                }
+              }
+            }}>
               {isLoading ? (
                 <div className="space-y-2">
                   {[1, 2, 3, 4, 5].map(i => (
                     <Skeleton key={i} className="h-8 w-full" />
                   ))}
                 </div>
-              ) : (
-                <>
+              ) : (                <>
                   <div className="text-sm font-medium py-1 px-2 text-muted-foreground mb-2">Folders</div>
                   {renderFolderTree(null)}
                   
@@ -847,16 +831,6 @@ function NotesContent() {
                       No folders yet. Create your first folder to organize your notes.
                     </div>
                   )}
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setCreateFolderDialogOpen(true)} 
-                    className="w-full mt-4"
-                  >
-                    <FolderPlus className="h-4 w-4 mr-2" />
-                    New Folder
-                  </Button>
                 </>
               )}
             </div>            {/* Resize handle */}
@@ -991,8 +965,7 @@ function NotesContent() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Display a welcome message instead of showing notes in the main container */}
-                    <div className="col-span-full text-center p-8 text-muted-foreground">
+                    {/* Display a welcome message instead of showing notes in the main container */}                    <div className="col-span-full text-center p-8 text-muted-foreground">
                       {selectedFolder ? (
                         <>
                           <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
@@ -1010,14 +983,30 @@ function NotesContent() {
                             <Plus className="h-4 w-4 mr-1" />
                             New Note
                           </Button>
-                        </>
-                      ) : (
+                        </>                      ) : (
                         <>
                           <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                          <h4 className="text-sm font-medium mb-1">Select a folder to get started</h4>
+                          <h4 className="text-sm font-medium mb-1">No folder selected</h4>
                           <p className="text-xs text-muted-foreground mb-3">
-                            Choose a folder from the sidebar to view and edit your notes
+                            Select a folder to filter notes, or create new notes and folders
                           </p>
+                          <div className="flex gap-2 justify-center">
+                            <Button 
+                              size="sm" 
+                              onClick={() => setCreateNoteDialogOpen(true)}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              New Note
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              size="sm" 
+                              onClick={() => setCreateFolderDialogOpen(true)}
+                            >
+                              <FolderPlus className="h-4 w-4 mr-1" />
+                              New Folder
+                            </Button>
+                          </div>
                         </>
                       )}
                     </div>
@@ -1028,14 +1017,16 @@ function NotesContent() {
           </div>
         </div>
       </div>
-      
-      {/* Create Folder Dialog */}
+        {/* Create Folder Dialog */}
       <Dialog open={createFolderDialogOpen} onOpenChange={setCreateFolderDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Folder</DialogTitle>
             <DialogDescription>
-              Create a new folder to organize your notes.
+              {selectedFolder 
+                ? `Create a new folder inside: "${folders.find(f => f.id === selectedFolder)?.name || 'Unknown folder'}"`
+                : 'Create a new folder in the root'
+              }
             </DialogDescription>
           </DialogHeader>
           <Input
@@ -1049,14 +1040,16 @@ function NotesContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {/* Create Note Dialog */}
+        {/* Create Note Dialog */}
       <Dialog open={createNoteDialogOpen} onOpenChange={setCreateNoteDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Note</DialogTitle>
             <DialogDescription>
-              Create a new note in folder: {selectedFolder ? `"${folders.find(f => f.id === selectedFolder)?.name || 'Unknown folder'}"` : 'Please select a folder first'}
+              {selectedFolder 
+                ? `Create a new note in folder: "${folders.find(f => f.id === selectedFolder)?.name || 'Unknown folder'}"`
+                : 'Create a new note in the root folder'
+              }
             </DialogDescription>
           </DialogHeader>
           <Input
@@ -1066,7 +1059,7 @@ function NotesContent() {
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateNoteDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateNote} disabled={!selectedFolder}>Create</Button>
+            <Button onClick={handleCreateNote}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1093,22 +1086,10 @@ function NotesContent() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
-      {/* Folder selection alert */}
-      {showFolderAlert && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <Alert variant="destructive" className="w-72">
-            <AlertDescription>
-              Please select a folder before creating a note
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
     </>
   );
 }
