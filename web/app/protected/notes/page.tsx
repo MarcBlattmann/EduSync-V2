@@ -433,10 +433,13 @@ function NotesContent() {
       return null;
     }
       return (
-      <div className={cn(level > 0 ? "ml-4" : "")}>
-        {foldersToShow.map(folder => {
+      <div className={cn(level > 0 ? "ml-4" : "")}>        {foldersToShow.map(folder => {
           // Get notes for this folder
           const folderNotes = getFolderNotes(folder.id);
+          // Get subfolders for this folder
+          const subfolders = getSubfolders(folder.id);
+          const hasContent = folderNotes.length > 0 || subfolders.length > 0;
+          const contentCount = folderNotes.length + subfolders.length;
           
           return (
             <div key={folder.id} className="mb-1.5">
@@ -478,12 +481,11 @@ function NotesContent() {
                       closeSidebar();
                     }
                   }}
-                >
-                  <Folder className="h-4 w-4 text-muted-foreground" />
+                >                  <Folder className="h-4 w-4 text-muted-foreground" />
                   <span className={cn(
-                    "text-sm truncate",
-                    folderNotes.length > 0 ? "folder-with-content" : "folder-empty"
-                  )}>{folder.name}{folderNotes.length > 0 ? ` (${folderNotes.length})` : ''}</span>
+                    "text-sm font-medium truncate",
+                    hasContent ? "folder-with-content" : "folder-empty"
+                  )}>{folder.name}{hasContent ? ` (${contentCount})` : ''}</span>
                 </div>
                 
                 <DropdownMenu>
