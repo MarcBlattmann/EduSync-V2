@@ -9,6 +9,39 @@
   overflow: hidden;
 }
 
+/* Line break handling for editor and viewer */
+.note-editor .ProseMirror,
+.note-viewer {
+  white-space: pre-wrap;
+}
+
+.note-editor .ProseMirror br,
+.note-viewer br {
+  display: block;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Ensure paragraphs maintain minimal spacing to mimic line breaks */
+.note-editor .ProseMirror p,
+.note-viewer p {
+  margin: 0 0 0.5em 0;
+  line-height: 1.5;
+}
+
+.note-editor .ProseMirror p:last-child,
+.note-viewer p:last-child {
+  margin-bottom: 0;
+}
+
+/* Handle empty paragraphs */
+.note-editor .ProseMirror p:empty,
+.note-viewer p:empty {
+  margin: 0;
+  line-height: 1.5;
+  min-height: 1.5em;
+}
+
 /* Remove outline from input fields, buttons, and interactive elements */
 .note-editor *, 
 .notes-container *, 
