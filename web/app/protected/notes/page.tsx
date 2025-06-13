@@ -114,8 +114,59 @@ function NotesContent() {
   const [showFolderAlert, setShowFolderAlert] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [editorInstance, setEditorInstance] = useState<any>(null);
+    // Resizable sidebar state
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Load saved sidebar width from localStorage
+  useEffect(() => {
+    const savedWidth = localStorage.getItem('notesSidebarWidth');
+    if (savedWidth) {
+      const width = parseInt(savedWidth, 10);
+      if (width >= 200 && width <= window.innerWidth * 0.5) {
+        setSidebarWidth(width);
+      }
+    }
+  }, []);
+
+  // Save sidebar width to localStorage
+  useEffect(() => {
+    localStorage.setItem('notesSidebarWidth', sidebarWidth.toString());
+  }, [sidebarWidth]);
   
-  const supabase = createClient();
+  const supabase = createClient();  // Handle sidebar resizing
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isMobile) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    document.body.classList.add('resizing');
+    
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startX;
+      const newWidth = startWidth + deltaX;
+      const minWidth = 200;
+      const maxWidth = window.innerWidth * 0.5;
+      
+      if (newWidth >= minWidth && newWidth <= maxWidth) {
+        setSidebarWidth(newWidth);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.classList.remove('resizing');
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
 
   // Fetch folders and notes
   const fetchData = async () => {
@@ -152,9 +203,15 @@ function NotesContent() {
     
     setIsLoading(false);
   };
-
   useEffect(() => {
     fetchData();
+  }, []);
+
+  // Cleanup effect for resize operation
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('resizing');
+    };
   }, []);
 
   // Toggle folder expansion
@@ -764,41 +821,70 @@ function NotesContent() {
             </Button>
           </div>
         )}
-        
-        {/* Main notes container with responsive layout */}
-        <div className="notes-container h-full">
-          {/* Folder sidebar - hidden on mobile */}
-          <div className="hidden md:block border rounded-md p-2 sm:p-3 h-full overflow-auto">
-            {isLoading ? (
-              <div className="space-y-2">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <Skeleton key={i} className="h-8 w-full" />
-                ))}
-              </div>
-            ) : (
-              <>
-                <div className="text-sm font-medium py-1 px-2 text-muted-foreground mb-2">Folders</div>
-                {renderFolderTree(null)}
-                
-                {folders.length === 0 && (
-                  <div className="text-sm text-muted-foreground px-2 py-4 text-center">
-                    No folders yet. Create your first folder to organize your notes.
-                  </div>
-                )}
-                
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCreateFolderDialogOpen(true)} 
-                  className="w-full mt-4"
-                >
-                  <FolderPlus className="h-4 w-4 mr-2" />
-                  New Folder
-                </Button>
-              </>
+          {/* Main notes container with responsive layout */}
+        <div className="notes-container h-full">          {/* Resizable folder sidebar - hidden on mobile */}
+          <div 
+            className={cn(
+              "hidden md:flex notes-sidebar-resizable border rounded-md",
+              isResizing && "resizing"
             )}
-          </div>          {/* Notes List and Editor */}
-          <div className="border rounded-md h-full flex flex-col note-transition">
+            style={{ width: sidebarWidth }}
+          >
+            <div className="folder-tree-container flex-1">
+              {isLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="text-sm font-medium py-1 px-2 text-muted-foreground mb-2">Folders</div>
+                  {renderFolderTree(null)}
+                  
+                  {folders.length === 0 && (
+                    <div className="text-sm text-muted-foreground px-2 py-4 text-center">
+                      No folders yet. Create your first folder to organize your notes.
+                    </div>
+                  )}
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setCreateFolderDialogOpen(true)} 
+                    className="w-full mt-4"
+                  >
+                    <FolderPlus className="h-4 w-4 mr-2" />
+                    New Folder
+                  </Button>
+                </>
+              )}
+            </div>            {/* Resize handle */}
+            <div 
+              className="resize-handle"
+              onMouseDown={handleMouseDown}
+              onDoubleClick={() => setSidebarWidth(300)}
+              style={{ cursor: isResizing ? 'col-resize' : 'col-resize' }}
+              role="separator"
+              aria-label="Resize sidebar (double-click to reset)"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft') {
+                  e.preventDefault();
+                  setSidebarWidth(prev => Math.max(200, prev - 10));
+                } else if (e.key === 'ArrowRight') {
+                  e.preventDefault();
+                  setSidebarWidth(prev => Math.min(window.innerWidth * 0.5, prev + 10));
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSidebarWidth(300);
+                }
+              }}
+            />
+          </div>
+
+          {/* Notes List and Editor */}
+          <div className="notes-main-content border rounded-md h-full flex flex-col note-transition">
             {selectedNote ? (
               // Note editor view
               <div className="flex flex-col h-full">

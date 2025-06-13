@@ -418,22 +418,140 @@ input:focus,
 
 /* Responsive layout helpers */
 .notes-container {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+  display: flex;
+  gap: 0;
   height: 100%;
 }
 
-@media (min-width: 768px) {
+/* Mobile layout - single column */
+@media (max-width: 767px) {
   .notes-container {
-    grid-template-columns: minmax(200px, 25%) 1fr;
+    flex-direction: column;
   }
 }
 
-@media (min-width: 1024px) {
+/* Desktop layout - resizable sidebar */
+@media (min-width: 768px) {
   .notes-container {
-    grid-template-columns: minmax(250px, 20%) 1fr;
+    flex-direction: row;
   }
+}
+
+/* Resizable sidebar container */
+.notes-sidebar-resizable {
+  position: relative;
+  min-width: 200px;
+  max-width: 50%;
+  width: 300px; /* Default width */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.1s ease-out;
+}
+
+/* Disable transition during active resize for performance */
+.notes-sidebar-resizable.resizing {
+  transition: none;
+}
+
+/* Resize handle */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: -12px; /* Center it in the gap - halfway between -6px and -18px */
+  bottom: 0;
+  width: 12px;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resize-handle:hover,
+.resize-handle:focus {
+  background-color: hsl(var(--primary) / 0.08);
+  outline: none;
+}
+
+.resize-handle:active {
+  background-color: hsl(var(--primary) / 0.15);
+}
+
+/* Resize handle visual indicator - clean and sharp */
+.resize-handle::after {
+  content: '';
+  width: 2px;
+  height: 40px;
+  background-color: hsl(var(--border));
+  border-radius: 1px;
+  opacity: 0.4;
+  transition: all 0.2s ease;
+}
+
+.resize-handle:hover::after,
+.resize-handle:focus::after {
+  opacity: 1;
+  background-color: hsl(var(--primary));
+  width: 3px;
+}
+
+/* Folder tree container with scrolling */
+.folder-tree-container {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.5rem 0.75rem;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) transparent;
+}
+
+.folder-tree-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.folder-tree-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Better spacing for folder tree items */
+.folder-tree-item {
+  margin-bottom: 2px;
+}
+
+.folder-tree-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Main content area */
+.notes-main-content {
+  flex: 1;
+  min-width: 0; /* Prevent flex overflow */
+  margin-left: 0.75rem; /* Proper spacing for centered handle */
+}
+
+/* Prevent text selection during resize */
+body.resizing {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  cursor: col-resize !important;
+}
+
+body.resizing * {
+  cursor: col-resize !important;
 }
 
 /* Sliding panel for mobile */
