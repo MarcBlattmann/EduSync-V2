@@ -968,24 +968,32 @@ function NotesContent() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Display a welcome message instead of showing notes in the main container */}                    <div className="col-span-full text-center p-8 text-muted-foreground">
-                      {selectedFolder ? (
+                    {/* Display a welcome message instead of showing notes in the main container */}                    <div className="col-span-full text-center p-8 text-muted-foreground">                      {selectedFolder ? (
                         <>
                           <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
                           <h4 className="text-sm font-medium mb-1">
                             {folders.find(f => f.id === selectedFolder)?.name || 'Folder'} selected
                           </h4>
                           <p className="text-xs text-muted-foreground mb-3">
-                            Select a note from the sidebar or create a new note
+                            Select a note from the sidebar or create new content within this folder
                           </p>
-                          <Button 
-                            size="sm" 
-                            onClick={() => setCreateNoteDialogOpen(true)}
-                            className="mx-auto"
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            New Note
-                          </Button>
+                          <div className="flex gap-2 justify-center">
+                            <Button 
+                              size="sm" 
+                              onClick={() => setCreateNoteDialogOpen(true)}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              New Note
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              size="sm" 
+                              onClick={() => setCreateFolderDialogOpen(true)}
+                            >
+                              <FolderPlus className="h-4 w-4 mr-1" />
+                              New Folder
+                            </Button>
+                          </div>
                         </>                      ) : (
                         <>
                           <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
