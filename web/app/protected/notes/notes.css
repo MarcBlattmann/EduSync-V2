@@ -323,12 +323,33 @@ input:focus,
   list-style-type: decimal;
 }
 
-.ProseMirror code {
-  background-color: rgba(0, 0, 0, 0.05);
+.ProseMirror code,
+.note-viewer code {
+  background-color: hsl(var(--muted));
   border-radius: 0.25rem;
   padding: 0.1rem 0.25rem;
   font-family: monospace;
   font-size: 0.9em;
+}
+
+/* Code blocks (pre) styling */
+.ProseMirror pre,
+.note-viewer pre {
+  background-color: hsl(var(--muted));
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-family: monospace;
+  font-size: 0.9em;
+  overflow-x: auto;
+  margin: 1rem 0;
+  white-space: pre;
+}
+
+.ProseMirror pre code,
+.note-viewer pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
 }
 
 .ProseMirror a {
