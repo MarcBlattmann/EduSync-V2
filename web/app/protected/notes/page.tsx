@@ -108,10 +108,12 @@ function NotesContent() {
   const [itemToDelete, setItemToDelete] = useState<{ type: 'note' | 'folder', id: string } | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [newNoteName, setNewNoteName] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [editMode, setEditMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');  const [editMode, setEditMode] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [editorInstance, setEditorInstance] = useState<any>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [unsavedChangesDialogOpen, setUnsavedChangesDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
     // Resizable sidebar state
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
@@ -390,15 +392,61 @@ function NotesContent() {
         note.id === selectedNote.id 
           ? { ...note, content: contentToSave, updated_at: new Date().toISOString() } 
           : note
-      );
-      setNotes(updatedNotes);
+      );      setNotes(updatedNotes);
       setSelectedNote({ ...selectedNote, content: contentToSave, updated_at: new Date().toISOString() });
       setEditMode(false);
+      setHasUnsavedChanges(false); // Clear unsaved changes flag after saving
       
       // Log the content after it has been saved
       console.log("Note content after saving:", contentToSave);
     }
-  };  // Get filtered notes for the current folder
+  };
+
+  // Handle content changes with unsaved changes tracking
+  const handleContentChange = (content: string) => {
+    setNoteContent(content);
+    if (selectedNote && content !== selectedNote.content) {
+      setHasUnsavedChanges(true);
+    } else {
+      setHasUnsavedChanges(false);
+    }
+  };
+
+  // Check for unsaved changes before performing an action
+  const checkUnsavedChanges = (action: () => void) => {
+    if (editMode && hasUnsavedChanges) {
+      setPendingAction(() => action);
+      setUnsavedChangesDialogOpen(true);
+    } else {
+      action();
+    }
+  };
+
+  // Handle save and continue with pending action
+  const handleSaveAndContinue = async () => {
+    await saveNote();
+    setUnsavedChangesDialogOpen(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
+  // Handle discard changes and continue with pending action
+  const handleDiscardAndContinue = () => {
+    setHasUnsavedChanges(false);
+    setUnsavedChangesDialogOpen(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  };
+
+  // Handle cancel action
+  const handleCancelAction = () => {
+    setUnsavedChangesDialogOpen(false);
+    setPendingAction(null);
+  };// Get filtered notes for the current folder
   // This only shows notes when a folder is selected AND a note is clicked
   const getFilteredNotes = (): Note[] => {
     let filteredNotes: Note[] = notes;
@@ -512,29 +560,32 @@ function NotesContent() {
                   )}
                 </button>                <div                  className="flex items-center gap-2 flex-1 p-1 pl-2"
                   onClick={() => {
-                    // Toggle folder selection - unselect if clicking on already selected folder
-                    if (selectedFolder === folder.id) {
-                      setSelectedFolder(null);
-                    } else {
-                      setSelectedFolder(folder.id);
-                    }
-                    
-                    // Clear any search query when selecting a folder
-                    if (searchQuery) {
-                      setSearchQuery('');
-                    }
-                    // Clear selected note when selecting a folder
-                    if (selectedNote) {
-                      setSelectedNote(null);
-                    }
-                    // For mobile, automatically expand the folder when selected (not when unselected)
-                    if (selectedFolder !== folder.id && !expandedFolders[folder.id]) {
-                      toggleFolderExpand(folder.id);
-                    }
-                    // On mobile, close the sidebar after selecting a folder
-                    if (isMobile) {
-                      closeSidebar();
-                    }
+                    checkUnsavedChanges(() => {
+                      // Toggle folder selection - unselect if clicking on already selected folder
+                      if (selectedFolder === folder.id) {
+                        setSelectedFolder(null);
+                      } else {
+                        setSelectedFolder(folder.id);
+                      }
+                      
+                      // Clear any search query when selecting a folder
+                      if (searchQuery) {
+                        setSearchQuery('');
+                      }
+                      // Clear selected note when selecting a folder
+                      if (selectedNote) {
+                        setSelectedNote(null);
+                      }
+                      setHasUnsavedChanges(false);
+                      // For mobile, automatically expand the folder when selected (not when unselected)
+                      if (selectedFolder !== folder.id && !expandedFolders[folder.id]) {
+                        toggleFolderExpand(folder.id);
+                      }
+                      // On mobile, close the sidebar after selecting a folder
+                      if (isMobile) {
+                        closeSidebar();
+                      }
+                    });
                   }}
                 ><Folder className="h-4 w-4 text-muted-foreground" />
                   <span className={cn(
@@ -594,17 +645,20 @@ function NotesContent() {
                           className={cn(
                             "flex items-center py-1 px-2 rounded-md cursor-pointer group note-item",
                             selectedNote?.id === note.id ? "active" : ""                          )}                          onClick={() => {
-                            setSelectedNote(note);
-                            setNoteContent(note.content);
-                            setEditMode(false);
-                            // Clear selected folder when selecting a note
-                            if (selectedFolder) {
-                              setSelectedFolder(null);
-                            }
-                            // On mobile, close the sidebar after selecting a note
-                            if (isMobile) {
-                              closeSidebar();
-                            }
+                            checkUnsavedChanges(() => {
+                              setSelectedNote(note);
+                              setNoteContent(note.content);
+                              setEditMode(false);
+                              setHasUnsavedChanges(false);
+                              // Clear selected folder when selecting a note
+                              if (selectedFolder) {
+                                setSelectedFolder(null);
+                              }
+                              // On mobile, close the sidebar after selecting a note
+                              if (isMobile) {
+                                closeSidebar();
+                              }
+                            });
                           }}>
                           <div className="flex items-center gap-2 flex-1 p-1 pl-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />
@@ -806,17 +860,19 @@ function NotesContent() {
               isResizing && "resizing"
             )}
             style={{ width: sidebarWidth }}
-          >
-            <div className="folder-tree-container flex-1" onClick={(e) => {
+          >            <div className="folder-tree-container flex-1" onClick={(e) => {
               // Only unselect if clicking directly on the container, not on folder elements
               if (e.target === e.currentTarget) {
-                setSelectedFolder(null);
-                if (searchQuery) {
-                  setSearchQuery('');
-                }
-                if (selectedNote) {
-                  setSelectedNote(null);
-                }
+                checkUnsavedChanges(() => {
+                  setSelectedFolder(null);
+                  if (searchQuery) {
+                    setSearchQuery('');
+                  }
+                  if (selectedNote) {
+                    setSelectedNote(null);
+                  }
+                  setHasUnsavedChanges(false);
+                });
               }
             }}>
               {isLoading ? (
@@ -917,10 +973,9 @@ function NotesContent() {
                   {editMode ? (
                     <>
                       <NoteToolbar editor={editorInstance} className="mb-2" />
-                      <div className="p-3 md:p-4">
-                        <NoteEditor
+                      <div className="p-3 md:p-4">                        <NoteEditor
                           content={noteContent}
-                          onChange={setNoteContent}
+                          onChange={handleContentChange}
                           className="h-full border-0"
                           onEditorReady={setEditorInstance}
                         />
@@ -1100,7 +1155,22 @@ function NotesContent() {
             <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog>      {/* Unsaved Changes Confirmation Dialog */}
+      <Dialog open={unsavedChangesDialogOpen} onOpenChange={setUnsavedChangesDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Unsaved Changes</DialogTitle>
+            <DialogDescription>
+              You have unsaved changes. Do you want to save them before proceeding?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelAction}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDiscardAndContinue}>Don't Save</Button>
+            <Button onClick={handleSaveAndContinue}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
