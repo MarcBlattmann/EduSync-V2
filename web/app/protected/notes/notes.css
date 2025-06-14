@@ -644,3 +644,9 @@ input.border,
   --tw-shadow-colored: 0 0 #0000 !important;
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000) !important;
 }
+
+/* Ensure consistent spacing in note editor and viewer */
+.note-editor .ProseMirror > *:first-child,
+.note-viewer > *:first-child {
+  margin-top: 0 !important;
+}

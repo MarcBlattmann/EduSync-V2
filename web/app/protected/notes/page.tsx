@@ -1026,15 +1026,16 @@ function NotesContent() {
                 <div className="flex-1 overflow-auto">
                   {editMode ? (
                     <>
-                      <NoteToolbar editor={editorInstance} className="mb-2" />
-                      <div className="p-3 md:p-4">                        <NoteEditor
+                      <NoteToolbar editor={editorInstance} className="mb-2" />                      <div className="p-2 md:p-3">
+                        <NoteEditor
                           content={noteContent}
                           onChange={handleContentChange}
                           className="h-full border-0"
-                          onEditorReady={setEditorInstance}                        />
+                          onEditorReady={setEditorInstance}
+                        />
                       </div>
                     </>
-                  ) : (                    <div className="p-3 md:p-4">
+                  ) : (                    <div className="p-2 md:p-3">
                       <NoteViewer content={selectedNote.content} className="h-full" />
                     </div>
                   )}
