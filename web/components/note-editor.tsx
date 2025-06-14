@@ -22,11 +22,18 @@ interface NoteEditorProps {
 
 export function NoteEditor({ content, onChange, className, onEditorReady }: NoteEditorProps) {
   // Add debugging to check the received content
-  console.log("NoteEditor received content:", content);
-  
-  const editor = useEditor({
+  console.log("NoteEditor received content:", content);  const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        hardBreak: {
+          keepMarks: false,
+        },
+        paragraph: {
+          HTMLAttributes: {
+            class: 'my-1',
+          },
+        },
+      }),
       Placeholder.configure({
         placeholder: 'Start writing...',
       }),
@@ -52,8 +59,7 @@ export function NoteEditor({ content, onChange, className, onEditorReady }: Note
       const html = editor.getHTML();
       console.log("Editor updated, HTML content:", html);
       onChange(html);
-    },
-    editorProps: {
+    },    editorProps: {
       attributes: {
         class: 'focus:outline-none prose prose-sm sm:prose max-w-none p-4 h-full min-h-[200px] overflow-auto',
       },
