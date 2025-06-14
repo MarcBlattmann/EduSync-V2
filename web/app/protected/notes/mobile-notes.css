@@ -67,4 +67,43 @@
     background-color: var(--primary);
     border-radius: 1px;
   }
+  /* Fix alignment issues on mobile - only target main content area */
+  .notes-main-content {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+  
+  /* Fix container margins but preserve mobile sidebar styling */
+  .notes-container:not(.mobile-sliding-panel):not(.notes-folders-container) {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+  
+  /* Specifically target input fields in main content to align with search bar */
+  .notes-main-content input,
+  .notes-main-content textarea,
+  .notes-main-content .note-editor {
+    margin-left: 0 !important;
+  }
+  
+  /* Fix button spacing in dialogs on mobile */
+  .DialogFooter {
+    gap: 0.5rem;
+  }
+  
+  .DialogFooter button + button {
+    margin-left: 0.5rem;
+  }
+  
+  /* Ensure dialog content has proper spacing */
+  .DialogContent {
+    padding: 1rem;
+  }
+  
+  .DialogContent .DialogFooter {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
 }

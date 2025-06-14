@@ -767,13 +767,64 @@ function NotesContent() {
           <Separator orientation="vertical" className="mr-2 h-4" />
           Notes
         </div>
-      </header>
-        {/* Mobile header */}
+      </header>      {/* Mobile header */}
       <MobileHeader 
         title={selectedNote ? selectedNote.title : searchQuery ? "Search Results" : "Notes"} 
         showBackButton={!!selectedNote}
-        onBackClick={() => setSelectedNote(null)}
-      />      {/* Mobile sidebar */}
+        onBackClick={() => setSelectedNote(null)}        actionButtons={selectedNote && isMobile ? (
+          editMode ? (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setEditMode(false);
+                  setHasUnsavedChanges(false);
+                }}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Cancel</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={saveNote}
+                disabled={!hasUnsavedChanges}
+                className="h-8 px-3"
+              >
+                Save
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  console.log("Switching to edit mode, content:", selectedNote.content);
+                  setNoteContent(selectedNote.content);
+                  setEditMode(true);
+                }}
+                className="h-8 w-8 p-0"
+              >
+                <Pencil className="h-4 w-4" />
+                <span className="sr-only">Edit</span>
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShareNoteDialogOpen(true)}
+                className="h-8 w-8 p-0"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="sr-only">Share</span>
+              </Button>
+            </div>
+          )
+        ) : undefined}
+      />
+
+      {/* Mobile sidebar */}
       <MobileSidebar title="Folders">
         {renderFolderTree(null)}
         
@@ -851,16 +902,18 @@ function NotesContent() {
               <span className="sr-only">New Note</span>
             </Button>
           </div>
-        )}
-          {/* Main notes container with responsive layout */}
-        <div className="notes-container h-full">          {/* Resizable folder sidebar - hidden on mobile */}
-          <div 
-            className={cn(
-              "hidden md:flex notes-sidebar-resizable border rounded-md",
-              isResizing && "resizing"
-            )}
-            style={{ width: sidebarWidth }}
-          >            <div className="folder-tree-container flex-1" onClick={(e) => {
+        )}          {/* Main notes container with responsive layout */}
+        <div className="notes-container h-full">
+          {/* Resizable folder sidebar - only on desktop */}
+          {!isMobile && (
+            <div 
+              className={cn(
+                "md:flex notes-sidebar-resizable border rounded-md",
+                isResizing && "resizing"
+              )}
+              style={{ width: sidebarWidth }}
+            >
+              <div className="folder-tree-container flex-1" onClick={(e) => {
               // Only unselect if clicking directly on the container, not on folder elements
               if (e.target === e.currentTarget) {
                 checkUnsavedChanges(() => {
@@ -912,12 +965,13 @@ function NotesContent() {
                   e.preventDefault();
                   setSidebarWidth(300);
                 }
-              }}
-            />
+              }}            />
           </div>
-
-          {/* Notes List and Editor */}
-          <div className="notes-main-content border rounded-md h-full flex flex-col note-transition">
+          )}          {/* Notes List and Editor */}
+          <div className={cn(
+            "notes-main-content h-full flex flex-col note-transition",
+            isMobile ? "" : "border rounded-md"
+          )}>
             {selectedNote ? (
               // Note editor view
               <div className="flex flex-col h-full">
@@ -977,43 +1031,16 @@ function NotesContent() {
                           content={noteContent}
                           onChange={handleContentChange}
                           className="h-full border-0"
-                          onEditorReady={setEditorInstance}
-                        />
+                          onEditorReady={setEditorInstance}                        />
                       </div>
-                      {isMobile && (
-                        <div className="p-2 flex justify-end border-t sticky bottom-0 bg-background">
-                          <Button size="sm" onClick={saveNote}>Save</Button>
-                        </div>
-                      )}
                     </>
                   ) : (                    <div className="p-3 md:p-4">
-                      <NoteViewer content={selectedNote.content} className="h-full" />                      {isMobile && (
-                        <div className="p-2 flex justify-end gap-2 border-t sticky bottom-0 bg-background">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => {
-                              console.log("Switching to edit mode, content:", selectedNote.content);
-                              setNoteContent(selectedNote.content);
-                              setEditMode(true);
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setShareNoteDialogOpen(true)}
-                          >
-                            <Share2 className="h-4 w-4 mr-1" />
-                            Share
-                          </Button>
-                        </div>
-                      )}
+                      <NoteViewer content={selectedNote.content} className="h-full" />
                     </div>
                   )}
-                </div>
-              </div>            ) : (              // Notes list view
+                </div>              </div>
+            ) : (
+              // Notes list view
               <div className="h-full p-3 overflow-auto flex items-center justify-center">
                 {isLoading ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1099,8 +1126,7 @@ function NotesContent() {
             placeholder="Folder Name"
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
-          />
-          <DialogFooter>
+          />          <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={() => setCreateFolderDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleCreateFolder}>Create</Button>
           </DialogFooter>
@@ -1122,8 +1148,7 @@ function NotesContent() {
             placeholder="Note Title"
             value={newNoteName}
             onChange={(e) => setNewNoteName(e.target.value)}
-          />
-          <DialogFooter>
+          />          <DialogFooter className="flex gap-2">
             <Button variant="outline" onClick={() => setCreateNoteDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleCreateNote}>Create</Button>
           </DialogFooter>
