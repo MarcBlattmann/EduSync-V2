@@ -9,6 +9,16 @@
   transition: all 0.2s ease-in-out;
 }
 
+.drag-over-invalid {
+  background-color: hsl(var(--destructive) / 0.1);
+  outline: 2px dashed hsl(var(--destructive));
+  outline-offset: -2px;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease-in-out;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .folder-tree-item.drag-over {
   background-color: hsl(var(--accent) / 0.2);
   outline: 2px dashed hsl(var(--accent));

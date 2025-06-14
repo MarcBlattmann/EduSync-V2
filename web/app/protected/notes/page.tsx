@@ -655,30 +655,34 @@ function NotesContent() {
               : note
           ));
         }
-      }
-    } else if (draggedFolder) {
+      }    } else if (draggedFolder) {
       // Moving a folder
       const targetFolder = folders.find(folder => folder.id === targetId);
       
-      if (targetFolder && draggedFolder.parent_id !== targetId) {
+      if (targetFolder && draggedId !== targetId) { // Prevent folder from being dropped on itself
         // Check if target folder is not a descendant of the dragged folder
         if (!isDescendantOf(targetId, draggedId)) {
-          // Update folder's parent in database
-          const { error } = await supabase
-            .from('note_folders')
-            .update({ parent_id: targetId })
-            .eq('id', draggedId);
-          
-          if (error) {
-            console.error('Error moving folder:', error);
-          } else {
-            // Update local state
-            setFolders(folders.map(folder => 
-              folder.id === draggedId 
-                ? { ...folder, parent_id: targetId }
-                : folder
-            ));
+          // Only update if the parent is actually changing
+          if (draggedFolder.parent_id !== targetId) {
+            // Update folder's parent in database
+            const { error } = await supabase
+              .from('note_folders')
+              .update({ parent_id: targetId })
+              .eq('id', draggedId);
+            
+            if (error) {
+              console.error('Error moving folder:', error);
+            } else {
+              // Update local state
+              setFolders(folders.map(folder => 
+                folder.id === draggedId 
+                  ? { ...folder, parent_id: targetId }
+                  : folder
+              ));
+            }
           }
+          // If parent_id is the same, this is just a reorder operation within the same folder
+          // No database update needed, just visual feedback that the drop was successful
         }
       }
     }
@@ -715,15 +719,24 @@ function NotesContent() {
                   "flex items-center py-1 px-2 rounded-md cursor-pointer group folder-tree-item",
                   selectedFolder === folder.id ? "active" : ""
                 )}
-                draggable
-                onDragStart={(e) => {
+                draggable                onDragStart={(e) => {
                   e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'folder', id: folder.id }));
                 }}                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.currentTarget.classList.add('drag-over');
+                  // Check if dragging a folder on itself or creating circular reference
+                  if (draggedItem?.type === 'folder' && 
+                      (draggedItem.item.id === folder.id || isDescendantOf(folder.id, draggedItem.item.id))) {
+                    e.dataTransfer.dropEffect = 'none';
+                    e.currentTarget.classList.add('drag-over-invalid');
+                    e.currentTarget.classList.remove('drag-over');
+                  } else {
+                    e.preventDefault();
+                    e.currentTarget.classList.add('drag-over');
+                    e.currentTarget.classList.remove('drag-over-invalid');
+                  }
                 }}
                 onDragLeave={(e) => {
                   e.currentTarget.classList.remove('drag-over');
+                  e.currentTarget.classList.remove('drag-over-invalid');
                 }}
                 onDrop={async (e) => {
                   e.preventDefault();
@@ -748,28 +761,32 @@ function NotesContent() {
                             : note
                         ));
                       }
-                    }
-                  } else if (data.type === 'folder') {
+                    }                  } else if (data.type === 'folder') {
                     // Move folder to be a child of this folder
                     const draggedFolder = folders.find(f => f.id === data.id);
-                    if (draggedFolder && draggedFolder.parent_id !== folder.id) {
+                    if (draggedFolder && data.id !== folder.id) { // Prevent folder from being dropped on itself
                       // Check if target folder is not a descendant of the dragged folder
                       if (!isDescendantOf(folder.id, data.id)) {
-                        const { error } = await supabase
-                          .from('note_folders')
-                          .update({ parent_id: folder.id })
-                          .eq('id', data.id);
-                        
-                        if (error) {
-                          console.error('Error moving folder:', error);
-                        } else {
-                          // Update local state
-                          setFolders(folders.map(f => 
-                            f.id === data.id 
-                              ? { ...f, parent_id: folder.id }
-                              : f
-                          ));
+                        // Only update if the parent is actually changing
+                        if (draggedFolder.parent_id !== folder.id) {
+                          const { error } = await supabase
+                            .from('note_folders')
+                            .update({ parent_id: folder.id })
+                            .eq('id', data.id);
+                          
+                          if (error) {
+                            console.error('Error moving folder:', error);
+                          } else {
+                            // Update local state
+                            setFolders(folders.map(f => 
+                              f.id === data.id 
+                                ? { ...f, parent_id: folder.id }
+                                : f
+                            ));
+                          }
                         }
+                        // If parent_id is the same, this is just a reorder operation within the same folder
+                        // No database update needed, just visual feedback that the drop was successful
                       }
                     }
                   }
@@ -1099,17 +1116,28 @@ function NotesContent() {
       </div>
     );
   };
-
   // Droppable Folder Component
   const DroppableFolder = ({ folder, children }: { folder: Folder, children: React.ReactNode }) => {
     const { isOver, setNodeRef } = useDroppable({ id: folder.id });
+    
+    // Check if the current dragged item is this folder itself
+    const isDraggingItself = activeId === folder.id;
+    
+    // Check if dropping would create a circular reference
+    const wouldCreateCircularRef = draggedItem?.type === 'folder' && 
+      (draggedItem.item.id === folder.id || isDescendantOf(folder.id, draggedItem.item.id));
 
     return (
       <div
         ref={setNodeRef}
         className={cn(
           "transition-colors duration-200",
-          isOver ? "bg-accent/20 border-accent border-2 border-dashed rounded-md" : ""
+          isOver && !isDraggingItself && !wouldCreateCircularRef
+            ? "bg-accent/20 border-accent border-2 border-dashed rounded-md" 
+            : "",
+          isOver && (isDraggingItself || wouldCreateCircularRef)
+            ? "bg-destructive/10 border-destructive border-2 border-dashed rounded-md opacity-50"
+            : ""
         )}
       >
         {children}
@@ -1370,25 +1398,29 @@ function NotesContent() {
                         ));
                       }
                     }
-                  } else if (data.type === 'folder') {
-                    // Move folder to root level
+                  } else if (data.type === 'folder') {                    // Move folder to root level
                     const draggedFolder = folders.find(f => f.id === data.id);
-                    if (draggedFolder && draggedFolder.parent_id !== null) {
-                      const { error } = await supabase
-                        .from('note_folders')
-                        .update({ parent_id: null })
-                        .eq('id', data.id);
-                      
-                      if (error) {
-                        console.error('Error moving folder to root:', error);
-                      } else {
-                        // Update local state
-                        setFolders(folders.map(f => 
-                          f.id === data.id 
-                            ? { ...f, parent_id: null }
-                            : f
-                        ));
+                    if (draggedFolder) {
+                      // Only update if the parent is actually changing (not already at root)
+                      if (draggedFolder.parent_id !== null) {
+                        const { error } = await supabase
+                          .from('note_folders')
+                          .update({ parent_id: null })
+                          .eq('id', data.id);
+                        
+                        if (error) {
+                          console.error('Error moving folder to root:', error);
+                        } else {
+                          // Update local state
+                          setFolders(folders.map(f => 
+                            f.id === data.id 
+                              ? { ...f, parent_id: null }
+                              : f
+                          ));
+                        }
                       }
+                      // If parent_id is already null, this is just a reorder operation at root level
+                      // No database update needed, just visual feedback that the drop was successful
                     }
                   }
                 }}
