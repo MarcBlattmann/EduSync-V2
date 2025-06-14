@@ -31,6 +31,15 @@
   cursor: grabbing;
 }
 
+/* Cursor styles for interactive elements */
+.group [data-radix-dropdown-menu-trigger] {
+  cursor: pointer;
+}
+
+.group:hover [data-radix-dropdown-menu-trigger] {
+  cursor: pointer;
+}
+
 /* Editor styles */
 .note-editor {
   min-height: 300px;
@@ -160,10 +169,12 @@ input:focus,
 .folder-tree-item {
   transition: background-color 0.2s ease;
   border-radius: 0.375rem;
+  cursor: pointer; /* Add pointer cursor on hover */
 }
 
 .folder-tree-item:hover {
   background-color: hsl(var(--accent) / 0.5);
+  cursor: pointer; /* Ensure pointer cursor on hover */
 }
 
 .folder-tree-item.active {
@@ -173,6 +184,11 @@ input:focus,
 
 .folder-toggle {
   transition: transform 0.2s ease;
+  cursor: pointer; /* Add pointer cursor for folder expand/collapse buttons */
+}
+
+.folder-toggle:hover {
+  cursor: pointer; /* Ensure pointer cursor on hover */
 }
 
 /* Using ChevronDown/ChevronRight icons for folder state */
@@ -198,10 +214,12 @@ input:focus,
 .note-item {
   transition: background-color 0.2s ease;
   border-radius: 0.375rem;
+  cursor: pointer; /* Add pointer cursor on hover */
 }
 
 .note-item:hover {
   background-color: hsl(var(--accent) / 0.5);
+  cursor: pointer; /* Ensure pointer cursor on hover */
 }
 
 .note-item.active {
@@ -624,6 +642,7 @@ input:focus,
   margin-bottom: 2px;
   white-space: nowrap; /* Prevent wrapping of deeply nested folders */
   min-width: max-content; /* Ensure folders don't compress */
+  cursor: pointer; /* Ensure pointer cursor for all folder items */
 }
 
 .folder-tree-item:last-child {
@@ -634,6 +653,7 @@ input:focus,
 .note-item {
   white-space: nowrap;
   min-width: max-content;
+  cursor: pointer; /* Ensure pointer cursor for all note items */
 }
 
 /* Make sure folder and note content spans properly */
