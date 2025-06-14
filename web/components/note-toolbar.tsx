@@ -14,8 +14,7 @@ import {
   Code,
   Link as LinkIcon,
   Unlink,
-  Image,
-  Table as TableIcon
+  Image
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Editor } from '@tiptap/react';
@@ -186,19 +185,10 @@ export function NoteToolbar({ editor, className }: NoteToolbarProps) {
             if (url) {
               editor.chain().focus().setImage({ src: url }).run();
             }
-          }}
-          title="Insert Image"
+          }}          title="Insert Image"
         >
           <Image className="h-4 w-4" />
           <span className="sr-only">Image</span>
-        </ToolbarButton>
-        
-        <ToolbarButton
-          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-          title="Insert Table"
-        >
-          <TableIcon className="h-4 w-4" />
-          <span className="sr-only">Table</span>
         </ToolbarButton>
       </div>
     </div>
