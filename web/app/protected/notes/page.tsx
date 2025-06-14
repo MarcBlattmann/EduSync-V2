@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   ChevronLeft,
-  Share2
+  Share2,
+  Type
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -40,6 +41,26 @@ import "./remove-outlines.css"; // Import additional CSS to remove input outline
 import "./mobile-notes.css"; // Import mobile-specific styling
 import "./mobile-sidebar-compat.css"; // Import compatibility CSS for dual sidebar setup
 import { getNoteId, isValidNote } from "./note-type-utils";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  useDroppable,
+} from '@dnd-kit/core';
+import {
+  useSortable,
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  CSS,
+} from '@dnd-kit/utilities';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,6 +87,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Define the structure for notes and folders
 interface Note {
@@ -101,19 +128,33 @@ function NotesContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
-  const [createFolderDialogOpen, setCreateFolderDialogOpen] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});  const [createFolderDialogOpen, setCreateFolderDialogOpen] = useState(false);
   const [createNoteDialogOpen, setCreateNoteDialogOpen] = useState(false);  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [shareNoteDialogOpen, setShareNoteDialogOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{ type: 'note' | 'folder', id: string } | null>(null);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'note' | 'folder', id: string } | null>(null);  const [itemToRename, setItemToRename] = useState<{ type: 'note' | 'folder', id: string, currentName: string } | null>(null);
   const [newFolderName, setNewFolderName] = useState('');
   const [newNoteName, setNewNoteName] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');  const [editMode, setEditMode] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');const [editMode, setEditMode] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [editorInstance, setEditorInstance] = useState<any>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [unsavedChangesDialogOpen, setUnsavedChangesDialogOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  
+  // Drag and drop state
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [draggedItem, setDraggedItem] = useState<{type: 'note' | 'folder', item: Note | Folder} | null>(null);
+  
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
     // Resizable sidebar state
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
@@ -362,10 +403,59 @@ function NotesContent() {
         setExpandedFolders(newExpandedFolders);
       }
     }
-    
-    setDeleteDialogOpen(false);
+      setDeleteDialogOpen(false);
     setItemToDelete(null);
-  };  // Save note content
+  };
+
+  // Rename note or folder
+  const handleRename = async () => {
+    if (!itemToRename || !newName.trim()) return;
+    
+    if (itemToRename.type === 'note') {
+      const { error } = await supabase
+        .from('notes')
+        .update({ title: newName.trim() })
+        .eq('id', itemToRename.id);
+      
+      if (error) {
+        console.error('Error renaming note:', error);
+      } else {
+        // Update note in state
+        setNotes(notes.map(note => 
+          note.id === itemToRename.id 
+            ? { ...note, title: newName.trim() }
+            : note
+        ));
+        
+        // If the renamed note is currently selected, update selectedNote
+        if (selectedNote && selectedNote.id === itemToRename.id) {
+          setSelectedNote({ ...selectedNote, title: newName.trim() });
+        }
+      }
+    } else {
+      const { error } = await supabase
+        .from('note_folders')
+        .update({ name: newName.trim() })
+        .eq('id', itemToRename.id);
+      
+      if (error) {
+        console.error('Error renaming folder:', error);
+      } else {
+        // Update folder in state
+        setFolders(folders.map(folder => 
+          folder.id === itemToRename.id 
+            ? { ...folder, name: newName.trim() }
+            : folder
+        ));
+      }
+    }
+    
+    setRenameDialogOpen(false);
+    setItemToRename(null);
+    setNewName('');
+  };
+
+  // Save note content
   const saveNote = async () => {
     if (!selectedNote) return;
     
@@ -443,10 +533,11 @@ function NotesContent() {
   };
 
   // Handle cancel action
-  const handleCancelAction = () => {
-    setUnsavedChangesDialogOpen(false);
+  const handleCancelAction = () => {    setUnsavedChangesDialogOpen(false);
     setPendingAction(null);
-  };// Get filtered notes for the current folder
+  };
+
+  // Get filtered notes for the current folder
   // This only shows notes when a folder is selected AND a note is clicked
   const getFilteredNotes = (): Note[] => {
     let filteredNotes: Note[] = notes;
@@ -496,8 +587,7 @@ function NotesContent() {
     const subfolders = folders.filter(folder => folder.parent_id === folderId);
     return subfolders.some(subfolder => folderHasSearchResults(subfolder.id));
   };
-  
-  // Get notes for a specific folder (filtered by search query if present)
+    // Get notes for a specific folder (filtered by search query if present)
   const getFolderNotes = (folderId: string) => {
     let folderNotes = notes.filter(note => note.folder_id === folderId);
     
@@ -513,7 +603,86 @@ function NotesContent() {
     return folderNotes;
   };
 
-  // Render folder tree recursively
+  // Drag and drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    setActiveId(active.id as string);
+    
+    // Find what's being dragged
+    const draggedNote = notes.find(note => note.id === active.id);
+    const draggedFolder = folders.find(folder => folder.id === active.id);
+    
+    if (draggedNote) {
+      setDraggedItem({ type: 'note', item: draggedNote });
+    } else if (draggedFolder) {
+      setDraggedItem({ type: 'folder', item: draggedFolder });
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    setActiveId(null);
+    setDraggedItem(null);
+    
+    if (!over) return;
+    
+    const draggedId = active.id as string;
+    const targetId = over.id as string;
+    
+    // Get the dragged item
+    const draggedNote = notes.find(note => note.id === draggedId);
+    const draggedFolder = folders.find(folder => folder.id === draggedId);
+    
+    if (draggedNote) {
+      // Moving a note
+      const targetFolder = folders.find(folder => folder.id === targetId);
+      
+      if (targetFolder && draggedNote.folder_id !== targetId) {
+        // Update note's folder in database
+        const { error } = await supabase
+          .from('notes')
+          .update({ folder_id: targetId })
+          .eq('id', draggedId);
+        
+        if (error) {
+          console.error('Error moving note:', error);
+        } else {
+          // Update local state
+          setNotes(notes.map(note => 
+            note.id === draggedId 
+              ? { ...note, folder_id: targetId }
+              : note
+          ));
+        }
+      }
+    } else if (draggedFolder) {
+      // Moving a folder
+      const targetFolder = folders.find(folder => folder.id === targetId);
+      
+      if (targetFolder && draggedFolder.parent_id !== targetId) {
+        // Check if target folder is not a descendant of the dragged folder
+        if (!isDescendantOf(targetId, draggedId)) {
+          // Update folder's parent in database
+          const { error } = await supabase
+            .from('note_folders')
+            .update({ parent_id: targetId })
+            .eq('id', draggedId);
+          
+          if (error) {
+            console.error('Error moving folder:', error);
+          } else {
+            // Update local state
+            setFolders(folders.map(folder => 
+              folder.id === draggedId 
+                ? { ...folder, parent_id: targetId }
+                : folder
+            ));
+          }
+        }
+      }
+    }
+  };  // Render folder tree recursively
   const renderFolderTree = (parentId: string | null, level = 0) => {
     const subfolders = getSubfolders(parentId);
     
@@ -529,7 +698,8 @@ function NotesContent() {
     if (foldersToShow.length === 0) {
       return null;
     }
-      return (
+    
+    return (
       <div className={cn(level > 0 ? "ml-4" : "")}>        {foldersToShow.map(folder => {
           // Get notes for this folder
           const folderNotes = getFolderNotes(folder.id);
@@ -545,6 +715,65 @@ function NotesContent() {
                   "flex items-center py-1 px-2 rounded-md cursor-pointer group folder-tree-item",
                   selectedFolder === folder.id ? "active" : ""
                 )}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'folder', id: folder.id }));
+                }}                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add('drag-over');
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.classList.remove('drag-over');
+                }}
+                onDrop={async (e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('drag-over');
+                  const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                  if (data.type === 'note') {
+                    // Move note to this folder
+                    const draggedNote = notes.find(note => note.id === data.id);
+                    if (draggedNote && draggedNote.folder_id !== folder.id) {
+                      const { error } = await supabase
+                        .from('notes')
+                        .update({ folder_id: folder.id })
+                        .eq('id', data.id);
+                      
+                      if (error) {
+                        console.error('Error moving note:', error);
+                      } else {
+                        // Update local state
+                        setNotes(notes.map(note => 
+                          note.id === data.id 
+                            ? { ...note, folder_id: folder.id }
+                            : note
+                        ));
+                      }
+                    }
+                  } else if (data.type === 'folder') {
+                    // Move folder to be a child of this folder
+                    const draggedFolder = folders.find(f => f.id === data.id);
+                    if (draggedFolder && draggedFolder.parent_id !== folder.id) {
+                      // Check if target folder is not a descendant of the dragged folder
+                      if (!isDescendantOf(folder.id, data.id)) {
+                        const { error } = await supabase
+                          .from('note_folders')
+                          .update({ parent_id: folder.id })
+                          .eq('id', data.id);
+                        
+                        if (error) {
+                          console.error('Error moving folder:', error);
+                        } else {
+                          // Update local state
+                          setFolders(folders.map(f => 
+                            f.id === data.id 
+                              ? { ...f, parent_id: folder.id }
+                              : f
+                          ));
+                        }
+                      }
+                    }
+                  }
+                }}
               >
                 <button 
                   onClick={(e) => toggleFolderExpand(folder.id, e)}
@@ -586,12 +815,20 @@ function NotesContent() {
                         closeSidebar();
                       }
                     });
-                  }}
-                ><Folder className="h-4 w-4 text-muted-foreground" />
-                  <span className={cn(
-                    "text-sm font-medium truncate",
-                    hasContent ? "folder-with-content" : "folder-empty"
-                  )}>{folder.name}{hasContent ? ` (${contentCount})` : ''}</span>
+                  }}                ><Folder className="h-4 w-4 text-muted-foreground" />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className={cn(
+                          "text-sm font-medium truncate",
+                          hasContent ? "folder-with-content" : "folder-empty"
+                        )}>{folder.name}{hasContent ? ` (${contentCount})` : ''}</span>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p>{folder.name}{hasContent ? ` (${contentCount} items)` : ''}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 
                 <DropdownMenu>
@@ -609,8 +846,7 @@ function NotesContent() {
                       }}
                     >
                       <FileText className="h-4 w-4 mr-2" />
-                      <span>New Note</span>
-                    </DropdownMenuItem>
+                      <span>New Note</span>                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
                         setSelectedFolder(folder.id);
@@ -621,6 +857,15 @@ function NotesContent() {
                       <span>New Folder</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem                      onClick={() => {
+                        setItemToRename({ type: 'folder', id: folder.id, currentName: folder.name });
+                        setNewName(folder.name);
+                        setRenameDialogOpen(true);
+                      }}
+                    >
+                      <Type className="h-4 w-4 mr-2" />
+                      <span>Rename</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
                         setItemToDelete({ type: 'folder', id: folder.id });
@@ -639,12 +884,16 @@ function NotesContent() {
                 <>                  {/* Display notes within this folder */}
                   {folderNotes.length > 0 && (
                     <div className="ml-4 mt-1 space-y-1">
-                      {folderNotes.map(note => (
-                        <div 
+                      {folderNotes.map(note => (                        <div 
                           key={note.id}
-                          className={cn(
-                            "flex items-center py-1 px-2 rounded-md cursor-pointer group note-item",
-                            selectedNote?.id === note.id ? "active" : ""                          )}                          onClick={() => {
+                          className={cn(                            "flex items-center py-1 px-2 rounded-md cursor-pointer group note-item",
+                            selectedNote?.id === note.id ? "active" : ""
+                          )}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'note', id: note.id }));
+                          }}
+                          onClick={() => {
                             checkUnsavedChanges(() => {
                               setSelectedNote(note);
                               setNoteContent(note.content);
@@ -657,12 +906,20 @@ function NotesContent() {
                               // On mobile, close the sidebar after selecting a note
                               if (isMobile) {
                                 closeSidebar();
-                              }
-                            });
+                              }                            });
                           }}>
                           <div className="flex items-center gap-2 flex-1 p-1 pl-2">
                             <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm truncate">{note.title}</span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="text-sm truncate">{note.title}</span>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" className="max-w-xs">
+                                  <p>{note.title}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                           
                           <DropdownMenu>
@@ -681,8 +938,17 @@ function NotesContent() {
                                   setEditMode(true);
                                 }}
                               >
-                                <Pencil className="h-4 w-4 mr-2" />
-                                <span>Edit</span>
+                                <Pencil className="h-4 w-4 mr-2" />                                <span>Edit</span>                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setItemToRename({ type: 'note', id: note.id, currentName: note.title });
+                                  setNewName(note.title);
+                                  setRenameDialogOpen(true);
+                                }}
+                              >
+                                <Type className="h-4 w-4 mr-2" />
+                                <span>Rename</span>
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={(e) => {
@@ -757,17 +1023,116 @@ function NotesContent() {
         });
         return newState;
       });
-    }  }, [searchQuery, folders, notes]);
+    }    }, [searchQuery, folders, notes]);  // Helper function to check if a folder is a descendant of another folder
+  const isDescendantOf = (childId: string, parentId: string): boolean => {
+    const childFolder = folders.find(f => f.id === childId);
+    if (!childFolder || !childFolder.parent_id) return false;
+    
+    if (childFolder.parent_id === parentId) return true;
+      return isDescendantOf(childFolder.parent_id, parentId);
+  };
+
+  // Draggable Folder Component
+  const DraggableFolder = ({ folder, level, children }: { folder: Folder, level: number, children: React.ReactNode }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: folder.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div ref={setNodeRef} style={style} {...attributes}>
+        <div className="relative group">
+          <div 
+            className={cn(
+              "flex items-center py-1 px-2 rounded-md cursor-pointer group folder-tree-item",
+              selectedFolder === folder.id ? "active" : "",
+              isDragging ? "z-50" : ""
+            )}
+            {...listeners}
+          >
+            {children}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Draggable Note Component
+  const DraggableNote = ({ note, children }: { note: Note, children: React.ReactNode }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: note.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div ref={setNodeRef} style={style} {...attributes}>
+        <div
+          className={cn(
+            "flex items-center py-1 px-2 rounded-md cursor-pointer group note-item",
+            selectedNote?.id === note.id ? "active" : "",
+            isDragging ? "z-50" : ""
+          )}
+          {...listeners}
+        >
+          {children}
+        </div>
+      </div>
+    );
+  };
+
+  // Droppable Folder Component
+  const DroppableFolder = ({ folder, children }: { folder: Folder, children: React.ReactNode }) => {
+    const { isOver, setNodeRef } = useDroppable({ id: folder.id });
+
+    return (
+      <div
+        ref={setNodeRef}
+        className={cn(
+          "transition-colors duration-200",
+          isOver ? "bg-accent/20 border-accent border-2 border-dashed rounded-md" : ""
+        )}
+      >
+        {children}
+      </div>
+    );
+  };
+  
   return (
     <>
-      {/* Desktop header */}
-      <header className="hidden md:flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-        <div className="flex items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          Notes
-        </div>
-      </header>      {/* Mobile header */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        {/* Desktop header */}
+        <header className="hidden md:flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            Notes
+          </div>
+        </header>{/* Mobile header */}
       <MobileHeader 
         title={selectedNote ? selectedNote.title : searchQuery ? "Search Results" : "Notes"} 
         showBackButton={!!selectedNote}
@@ -822,15 +1187,62 @@ function NotesContent() {
             </div>
           )
         ) : undefined}
-      />
-
-      {/* Mobile sidebar */}
-      <MobileSidebar title="Folders">
+      />      {/* Mobile sidebar */}
+      <MobileSidebar title="Notes & Folders">
         {renderFolderTree(null)}
         
-        {folders.length === 0 && (
+        {/* Display root-level notes in mobile sidebar */}
+        {(() => {
+          const rootNotes = notes.filter(note => note.folder_id === null);
+          const filteredRootNotes = searchQuery 
+            ? rootNotes.filter(note => 
+                note.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                stripHtml(note.content).toLowerCase().includes(searchQuery.toLowerCase())
+              )
+            : rootNotes;
+          
+          if (filteredRootNotes.length > 0) {
+            return (
+              <div className="space-y-1">
+                {filteredRootNotes.map(note => (
+                  <div 
+                    key={note.id}
+                    className={cn(
+                      "flex items-center py-1 px-2 rounded-md cursor-pointer group note-item",
+                      selectedNote?.id === note.id ? "active" : ""
+                    )}
+                    onClick={() => {
+                      checkUnsavedChanges(() => {
+                        setSelectedNote(note);
+                        setNoteContent(note.content);
+                        setEditMode(false);
+                        setHasUnsavedChanges(false);
+                        // Clear selected folder when selecting a note
+                        if (selectedFolder) {
+                          setSelectedFolder(null);
+                        }
+                        // On mobile, close the sidebar after selecting a note
+                        if (isMobile) {
+                          closeSidebar();
+                        }
+                      });
+                    }}
+                  >
+                    <div className="flex items-center gap-2 flex-1 p-1 pl-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm truncate">{note.title}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          }
+          return null;
+        })()}
+        
+        {folders.length === 0 && notes.filter(note => note.folder_id === null).length === 0 && (
           <div className="text-sm text-muted-foreground px-2 py-4 text-center">
-            No folders yet. Create your first folder to organize your notes.
+            No folders or notes yet. Create your first folder or note to get started.
           </div>
         )}
       </MobileSidebar>
@@ -912,35 +1324,200 @@ function NotesContent() {
                 isResizing && "resizing"
               )}
               style={{ width: sidebarWidth }}
-            >
-              <div className="folder-tree-container flex-1" onClick={(e) => {
-              // Only unselect if clicking directly on the container, not on folder elements
-              if (e.target === e.currentTarget) {
-                checkUnsavedChanges(() => {
-                  setSelectedFolder(null);
-                  if (searchQuery) {
-                    setSearchQuery('');
+            >              <div 
+                className="folder-tree-container flex-1" 
+                onClick={(e) => {
+                  // Only unselect if clicking directly on the container, not on folder elements
+                  if (e.target === e.currentTarget) {
+                    checkUnsavedChanges(() => {
+                      setSelectedFolder(null);
+                      if (searchQuery) {
+                        setSearchQuery('');
+                      }
+                      if (selectedNote) {
+                        setSelectedNote(null);
+                      }
+                      setHasUnsavedChanges(false);
+                    });
                   }
-                  if (selectedNote) {
-                    setSelectedNote(null);
+                }}                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add('drag-over');
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.classList.remove('drag-over');
+                }}                onDrop={async (e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('drag-over');
+                  const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                  if (data.type === 'note') {
+                    // Move note to root (no folder)
+                    const draggedNote = notes.find(note => note.id === data.id);
+                    if (draggedNote && draggedNote.folder_id !== null) {
+                      const { error } = await supabase
+                        .from('notes')
+                        .update({ folder_id: null })
+                        .eq('id', data.id);
+                      
+                      if (error) {
+                        console.error('Error moving note to root:', error);
+                      } else {
+                        // Update local state
+                        setNotes(notes.map(note => 
+                          note.id === data.id 
+                            ? { ...note, folder_id: null }
+                            : note
+                        ));
+                      }
+                    }
+                  } else if (data.type === 'folder') {
+                    // Move folder to root level
+                    const draggedFolder = folders.find(f => f.id === data.id);
+                    if (draggedFolder && draggedFolder.parent_id !== null) {
+                      const { error } = await supabase
+                        .from('note_folders')
+                        .update({ parent_id: null })
+                        .eq('id', data.id);
+                      
+                      if (error) {
+                        console.error('Error moving folder to root:', error);
+                      } else {
+                        // Update local state
+                        setFolders(folders.map(f => 
+                          f.id === data.id 
+                            ? { ...f, parent_id: null }
+                            : f
+                        ));
+                      }
+                    }
                   }
-                  setHasUnsavedChanges(false);
-                });
-              }
-            }}>
+                }}
+              >
               {isLoading ? (
                 <div className="space-y-2">
                   {[1, 2, 3, 4, 5].map(i => (
                     <Skeleton key={i} className="h-8 w-full" />
                   ))}
-                </div>
-              ) : (                <>
-                  <div className="text-sm font-medium py-1 px-2 text-muted-foreground mb-2">Folders</div>
+                </div>              ) : (                <>
+                  <div className="text-sm font-medium py-1 px-2 text-muted-foreground mb-2">Notes & Folders</div>
                   {renderFolderTree(null)}
                   
-                  {folders.length === 0 && (
+                  {/* Display root-level notes (notes without folders) */}
+                  {(() => {
+                    const rootNotes = notes.filter(note => note.folder_id === null);
+                    const filteredRootNotes = searchQuery 
+                      ? rootNotes.filter(note => 
+                          note.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          stripHtml(note.content).toLowerCase().includes(searchQuery.toLowerCase())
+                        )
+                      : rootNotes;
+                    
+                    if (filteredRootNotes.length > 0) {
+                      return (                        <div className="space-y-1">
+                          {filteredRootNotes.map(note => (
+                            <div 
+                              key={note.id}
+                              className={cn(
+                                "flex items-center py-1 px-2 rounded-md cursor-pointer group note-item",
+                                selectedNote?.id === note.id ? "active" : ""
+                              )}
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'note', id: note.id }));
+                              }}
+                              onClick={() => {
+                                checkUnsavedChanges(() => {
+                                  setSelectedNote(note);
+                                  setNoteContent(note.content);
+                                  setEditMode(false);
+                                  setHasUnsavedChanges(false);
+                                  // Clear selected folder when selecting a note
+                                  if (selectedFolder) {
+                                    setSelectedFolder(null);
+                                  }
+                                  // On mobile, close the sidebar after selecting a note
+                                  if (isMobile) {
+                                    closeSidebar();
+                                  }
+                                });
+                              }}
+                            >
+                              <div className="flex items-center gap-2 flex-1 p-1 pl-2">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="text-sm truncate">{note.title}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right" className="max-w-xs">
+                                      <p>{note.title}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                              
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Actions</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedNote(note);
+                                      setNoteContent(note.content);
+                                      setEditMode(true);
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    <span>Edit</span>                                  </DropdownMenuItem>                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setItemToRename({ type: 'note', id: note.id, currentName: note.title });
+                                      setNewName(note.title);
+                                      setRenameDialogOpen(true);
+                                    }}
+                                  >
+                                    <Type className="h-4 w-4 mr-2" />
+                                    <span>Rename</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setItemToDelete({ type: 'note', id: note.id });
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    <span>Delete</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedNote(note);
+                                      setShareNoteDialogOpen(true);
+                                    }}
+                                  >
+                                    <Share2 className="h-4 w-4 mr-2" />
+                                    <span>Share</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  
+                  {folders.length === 0 && notes.filter(note => note.folder_id === null).length === 0 && (
                     <div className="text-sm text-muted-foreground px-2 py-4 text-center">
-                      No folders yet. Create your first folder to organize your notes.
+                      No folders or notes yet. Create your first folder or note to get started.
                     </div>
                   )}
                 </>
@@ -1107,10 +1684,9 @@ function NotesContent() {
                   </div>
                 )}
               </div>
-            )}
-          </div>
+            )}          </div>
         </div>
-      </div>
+        </div>
         {/* Create Folder Dialog */}
       <Dialog open={createFolderDialogOpen} onOpenChange={setCreateFolderDialogOpen}>
         <DialogContent>
@@ -1181,7 +1757,49 @@ function NotesContent() {
             <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>      {/* Unsaved Changes Confirmation Dialog */}
+      </AlertDialog>      {/* Rename Dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {itemToRename?.type === 'note' ? 'Rename Note' : 'Rename Folder'}
+            </DialogTitle>
+            <DialogDescription>
+              Enter a new name for {itemToRename?.type === 'note' ? 'the note' : 'the folder'}.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            placeholder={itemToRename?.type === 'note' ? 'Note Title' : 'Folder Name'}
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleRename();
+              }
+            }}
+          />
+          <DialogFooter className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setRenameDialogOpen(false);
+                setItemToRename(null);
+                setNewName('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleRename}
+              disabled={!newName.trim()}
+            >
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unsaved Changes Confirmation Dialog */}
       <Dialog open={unsavedChangesDialogOpen} onOpenChange={setUnsavedChangesDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1193,10 +1811,26 @@ function NotesContent() {
           <DialogFooter>
             <Button variant="outline" onClick={handleCancelAction}>Cancel</Button>
             <Button variant="destructive" onClick={handleDiscardAndContinue}>Don't Save</Button>
-            <Button onClick={handleSaveAndContinue}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
+            <Button onClick={handleSaveAndContinue}>Save Changes</Button>          </DialogFooter>        </DialogContent>
       </Dialog>
+      <DragOverlay>
+        {activeId && draggedItem ? (
+          <div className="bg-background border border-border rounded-md p-2 shadow-lg">
+            {draggedItem.type === 'note' ? (
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="text-sm">{(draggedItem.item as Note).title}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Folder className="h-4 w-4" />
+                <span className="text-sm">{(draggedItem.item as Folder).name}</span>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </DragOverlay>
+      </DndContext>
     </>
   );
 }
