@@ -13,9 +13,10 @@ interface MobileHeaderProps {
   title: string;
   showBackButton?: boolean;
   onBackClick?: () => void;
+  actionButtons?: React.ReactNode;
 }
 
-export function MobileHeader({ title, showBackButton = false, onBackClick }: MobileHeaderProps) {
+export function MobileHeader({ title, showBackButton = false, onBackClick, actionButtons }: MobileHeaderProps) {
   const { isMobile, toggleSidebar } = useNotesMobile();
   
   // We need to import useSidebar to control the main app sidebar
@@ -75,8 +76,7 @@ export function MobileHeader({ title, showBackButton = false, onBackClick }: Mob
           </TooltipProvider>
         </div>
       )}
-      
-      <div className="flex items-center">
+        <div className="flex items-center">
         {!showBackButton && <div className="mr-4 h-4 border-r border-border"></div>}
         <h2 className={cn(
           "font-medium truncate transition-all",
@@ -86,7 +86,9 @@ export function MobileHeader({ title, showBackButton = false, onBackClick }: Mob
         </h2>
       </div>
       
-      <div className="ml-auto"></div> {/* Push everything to the left */}
+      <div className="ml-auto flex items-center gap-2">
+        {actionButtons}
+      </div>
     </div>
   );
 }

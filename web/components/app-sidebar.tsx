@@ -56,10 +56,6 @@ const navigationData = {
       url: "/protected/notes",
       icon: FileText,
       noSubmenu: true,
-      badge: {
-        text: "Beta",
-        className: "bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-300"
-      }
     }
   ]
 };
