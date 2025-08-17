@@ -1,4 +1,4 @@
-<div align="center">
+<div align="center"> 
 
 # ![EduSync](https://github.com/user-attachments/assets/0502b9c1-e1c5-4465-a373-f124b957d0aa)
 
