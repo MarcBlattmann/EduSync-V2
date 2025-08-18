@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { cn, getDaysRemaining, formatDaysRemaining } from "@/lib/utils";
 import { ShareCalendarDialog } from "@/components/share-calendar-dialog";
 
 interface CalendarEvent {
@@ -479,6 +479,8 @@ export default function Calendar() {
                   .filter(event => new Date(event.start_date) >= new Date())
                   .map(event => {
                     const start = new Date(event.start_date);
+                    const daysRemaining = getDaysRemaining(event.start_date);
+                    const daysText = formatDaysRemaining(daysRemaining);
                     
                     return (                      <div 
                         key={event.id} 
@@ -514,13 +516,18 @@ export default function Calendar() {
                             </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className={cn(
-                            "w-2 h-2 rounded-full",
-                            `bg-${event.color}-500`
-                          )} />
-                          <div className="text-xs text-muted-foreground">
-                            {start.toLocaleDateString()}
+                        <div className="flex items-center justify-between mt-1">
+                          <div className="flex items-center gap-2">
+                            <div className={cn(
+                              "w-2 h-2 rounded-full",
+                              `bg-${event.color}-500`
+                            )} />
+                            <div className="text-xs text-muted-foreground">
+                              {start.toLocaleDateString()}
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground font-medium">
+                            {daysText}
                           </div>
                         </div>
                         {event.description && (

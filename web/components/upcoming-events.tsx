@@ -4,7 +4,7 @@ import { memo, useMemo } from "react";
 import Link from "next/link";
 import { CalendarIcon, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, getDaysRemaining, formatDaysRemaining } from "@/lib/utils";
 
 // Define the CalendarEvent type
 interface CalendarEvent {
@@ -40,6 +40,9 @@ const formatDate = (dateStr: string) => {
 
 // Event item component to optimize rendering
 const EventItem = memo(({ event }: { event: CalendarEvent }) => {
+  const daysRemaining = getDaysRemaining(event.start_date);
+  const daysText = formatDaysRemaining(daysRemaining);
+  
   return (
     <div 
       key={event.id}
@@ -52,9 +55,14 @@ const EventItem = memo(({ event }: { event: CalendarEvent }) => {
       <div className="flex-1 min-w-0">
         <div className="flex flex-col sm:flex-row sm:justify-between">
           <p className="font-medium truncate">{event.title}</p>
-          <p className="text-xs text-muted-foreground">
-            {formatDate(event.start_date)}
-          </p>
+          <div className="flex flex-col sm:items-end">
+            <p className="text-xs text-muted-foreground">
+              {formatDate(event.start_date)}
+            </p>
+            <p className="text-xs text-muted-foreground font-medium">
+              {daysText}
+            </p>
+          </div>
         </div>
         {event.description && (
           <p className="text-xs mt-0.5 text-muted-foreground line-clamp-1">
