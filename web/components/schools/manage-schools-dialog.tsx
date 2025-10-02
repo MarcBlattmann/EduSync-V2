@@ -123,7 +123,7 @@ export function ManageSchoolsDialog({ open, onOpenChange, existingSubjects = [] 
                   </p>
                   <p className="text-blue-800 dark:text-blue-200">
                     Schools help organize grades when attending multiple institutions. If you only attend one school, 
-                    this feature is unnecessary. You can disable it anytime in <span className="font-medium">Settings → System → Beta Features</span>.
+                    this feature is unnecessary. You can disable the Beta Feature anytime in <span className="font-medium">Settings → System → Beta Features</span>.
                   </p>
                 </div>
               </div>
