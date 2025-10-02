@@ -39,7 +39,8 @@ import {
   MoreHorizontal,
   Search,
   Plus,
-  GraduationCap
+  GraduationCap,
+  Info
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -112,6 +113,22 @@ export function ManageSchoolsDialog({ open, onOpenChange, existingSubjects = [] 
           </DialogHeader>
 
           <div className="space-y-4">
+            {/* Info Box - Only show when no schools exist */}
+            {schools.length === 0 && (
+              <div className="flex gap-3 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 text-sm space-y-1">
+                  <p className="font-medium text-blue-900 dark:text-blue-100">
+                    About Schools Feature
+                  </p>
+                  <p className="text-blue-800 dark:text-blue-200">
+                    Schools help organize grades when attending multiple institutions. If you only attend one school, 
+                    this feature is unnecessary. You can disable it anytime in <span className="font-medium">Settings → System → Beta Features</span>.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Search and New School Button */}
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
               <div className="relative flex-1">
