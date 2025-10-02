@@ -19,9 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, GraduationCap } from "lucide-react";
 import { useGradeSystem, getGradeRange } from "@/hooks/use-grade-system";
 import { useSemesters } from "@/hooks/use-semesters";
+import { useSchools } from "@/hooks/use-schools";
 import { getSemesterIdFromDate, getSemesterDetectionInfo } from "@/utils/semester-detection";
 
 interface AddGradeProps {
@@ -31,6 +32,7 @@ interface AddGradeProps {
     grade: number;
     date: string;
     description: string;
+    school_id?: string;
   }) => void;
   existingSubjects: string[];  editingGrade?: {
     id: string;
@@ -38,6 +40,7 @@ interface AddGradeProps {
     grade: number;
     date: string;
     description?: string; // Made optional to match Grade interface
+    school_id?: string;
     created_at: string;
   } | null;
   isEditing?: boolean;
@@ -57,10 +60,12 @@ export function AddGradeDialog({
   const [gradeInput, setGradeInput] = useState<string>("1");  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [description, setDescription] = useState("");
   const [showCustomSubject, setShowCustomSubject] = useState(false);
+  const [schoolId, setSchoolId] = useState<string>("");
 
   // Use our centralized grade system hook
   const { gradeSystem: gradeSystemState } = useGradeSystem();
-  const { semesters, activeSemester } = useSemesters();// Use our imported getGradeRange utility
+  const { semesters, activeSemester } = useSemesters();
+  const { activeSchools } = useSchools();// Use our imported getGradeRange utility
   const gradeRangeInfo = getGradeRange(gradeSystemState);
   const { min, max, step } = gradeRangeInfo;
   
@@ -98,6 +103,7 @@ export function AddGradeDialog({
       const roundedGrade = Math.round(editingGrade.grade * 100) / 100;
       setGrade(roundedGrade);      setGradeInput(roundedGrade.toString());      setDate(editingGrade.date);
       setDescription(editingGrade.description || ''); // Added fallback for undefined
+      setSchoolId(editingGrade.school_id || '');
     } else {
       // Reset form when not editing - use appropriate defaults for the current grade system
       setSubject("");
@@ -120,6 +126,7 @@ export function AddGradeDialog({
       setDate(new Date().toISOString().split("T")[0]);
       setDescription("");
       setShowCustomSubject(false);
+      setSchoolId("");
     }
   }, [editingGrade, existingSubjects, open, min, max, gradeSystemState, activeSemester]);  const handleGradeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -169,6 +176,7 @@ export function AddGradeDialog({
         grade: validatedGrade,
         date,
         description,
+        school_id: schoolId || undefined,
         gradeSystem: gradeSystemState,
         detectedSemester: getSemesterDetectionInfo(date, semesters, activeSemester)
       });
@@ -177,6 +185,7 @@ export function AddGradeDialog({
         grade: validatedGrade,
         date,
         description,
+        school_id: schoolId || undefined,
       });// Reset form
       setSubject("");
       setCustomSubject("");
@@ -185,6 +194,7 @@ export function AddGradeDialog({
       setDate(new Date().toISOString().split("T")[0]); // Reset the date to today
       setDescription("");
       setShowCustomSubject(false);
+      setSchoolId("");
     } catch (error) {
       console.error("Error in form submission:", error);
       alert("There was an error submitting the grade. Please try again.");
@@ -267,6 +277,36 @@ export function AddGradeDialog({
                 required
               />
             </div>
+            {/* School Selector - Optional */}
+            {activeSchools.length > 0 && (
+              <div className="grid gap-2">
+                <Label htmlFor="school">School (Optional)</Label>
+                <Select 
+                  value={schoolId || "none"} 
+                  onValueChange={(value) => setSchoolId(value === "none" ? "" : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="No school selected" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <span className="text-muted-foreground">No school</span>
+                    </SelectItem>
+                    {activeSchools.map((school) => (
+                      <SelectItem key={school.id} value={school.id}>
+                        <div className="flex items-center gap-2">
+                          <GraduationCap 
+                            size={16} 
+                            style={{ color: school.color }} 
+                          />
+                          <span>{school.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="date">Date</Label>
               <Input

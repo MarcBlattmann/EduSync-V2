@@ -29,16 +29,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Settings, Calendar, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, Settings, Calendar, Star, GraduationCap } from "lucide-react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { useGradeSystem, getGradeColor, convertGrade } from "@/hooks/use-grade-system";
 import { useDisplayPreferences, getDisplayLabel, convertGradeForDisplay } from "@/hooks/use-display-preferences";
 import { useSemesterDefault, getDefaultSemesterId } from "@/hooks/use-semester-default";
 import { useSubjectPreferences } from "@/hooks/use-subject-preferences";
 import { useSemesters } from "@/contexts/semester-context";
+import { useSchools } from "@/hooks/use-schools";
 import { getSemesterIdFromDate } from "@/utils/semester-detection";
 import { ManageSemestersDialog } from "@/components/semesters/manage-semesters-dialog";
+import { ManageSchoolsDialog } from "@/components/schools/manage-schools-dialog";
 import type { Semester } from "@/types/semester";
+import type { School } from "@/types/school";
 
 // Define types for the grade data
 interface Grade {
@@ -50,6 +53,7 @@ interface Grade {
   description?: string; // Changed to optional to match grades-table component
   created_at: string;
   semester_id?: string; // Add semester_id field for filtering
+  school_id?: string; // Add school_id field for filtering
 }
 
 export default function Grades() {
@@ -62,13 +66,25 @@ export default function Grades() {
   const [gradeToDelete, setGradeToDelete] = useState<string | null>(null);
   const [editingGrade, setEditingGrade] = useState<Grade | null>(null);
   const [averageGrade, setAverageGrade] = useState<number | null>(null);  const [subjectAverages, setSubjectAverages] = useState<Record<string, number>>({});
-  const [manageSemestersOpen, setManageSemestersOpen] = useState<boolean>(false);  const [selectedSemester, setSelectedSemester] = useState<Semester | null>(null);  // Use our custom hook for grade system
+  const [manageSemestersOpen, setManageSemestersOpen] = useState<boolean>(false);
+  const [manageSchoolsOpen, setManageSchoolsOpen] = useState<boolean>(false);
+  const [selectedSemester, setSelectedSemester] = useState<Semester | null>(null);
+  const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Use our custom hook for grade system
   const { gradeSystem } = useGradeSystem();
   const { displayLabel } = useDisplayPreferences();
   const { defaultSemester } = useSemesterDefault();
   const { subjectFilter } = useSubjectPreferences();
   const { semesters, activeSemester } = useSemesters();
+  const { schools, activeSchools, schoolsEnabled } = useSchools();
   const isMobile = useIsMobile();
+
+  // Set mounted state after hydration to prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Initialize semester selection based on user preference
   useEffect(() => {
@@ -190,6 +206,7 @@ export default function Grades() {
     grade: number;
     date: string;
     description: string;
+    school_id?: string | null;
   }) => {
     if (!user) return;
 
@@ -233,7 +250,8 @@ export default function Grades() {
             grade: adjustedGrade,
             date: gradeData.date,
             description: gradeData.description,
-            semester_id: detectedSemesterId || null
+            semester_id: detectedSemesterId || null,
+            school_id: gradeData.school_id || null
           })
           .eq('id', editingGrade.id)
           .select();
@@ -296,7 +314,8 @@ export default function Grades() {
             grade: adjustedGrade,
             date: gradeData.date,
             description: gradeData.description,
-            semester_id: detectedSemesterId || null
+            semester_id: detectedSemesterId || null,
+            school_id: gradeData.school_id || null
           }])
           .select();
         
@@ -390,26 +409,34 @@ export default function Grades() {
     return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";  };  // Simple hook that always uses vertical layout
   const { isSmallScreen, triggerStyle, containerClasses, triggerClasses } = useSemesterSelectorWidth();
 
-  // Filter grades based on selected semester
+  // Filter grades based on selected semester and school
   const getFilteredGrades = () => {
-    if (!selectedSemester) {
-      return grades; // Show all grades if no semester is selected
+    let filtered = grades;
+    
+    // Filter by semester
+    if (selectedSemester) {
+      filtered = filtered.filter(grade => {
+        // Check if grade has semester_id that matches selected semester
+        if (grade.semester_id === selectedSemester.id) {
+          return true;
+        }
+        
+        // If grade doesn't have semester_id, try to determine it from date
+        if (!grade.semester_id && grade.date) {
+          const detectedSemesterId = getSemesterIdFromDate(grade.date, semesters, activeSemester);
+          return detectedSemesterId === selectedSemester.id;
+        }
+        
+        return false;
+      });
     }
     
-    return grades.filter(grade => {
-      // Check if grade has semester_id that matches selected semester
-      if (grade.semester_id === selectedSemester.id) {
-        return true;
-      }
-      
-      // If grade doesn't have semester_id, try to determine it from date
-      if (!grade.semester_id && grade.date) {
-        const detectedSemesterId = getSemesterIdFromDate(grade.date, semesters, activeSemester);
-        return detectedSemesterId === selectedSemester.id;
-      }
-      
-      return false;
-    });
+    // Filter by school
+    if (selectedSchool) {
+      filtered = filtered.filter(grade => grade.school_id === selectedSchool.id);
+    }
+    
+    return filtered;
   };
 
   // Calculate statistics for filtered grades
@@ -501,9 +528,19 @@ export default function Grades() {
               onClick={() => setManageSemestersOpen(true)} 
               className="flex gap-2"
             >
-              <Settings size={16} />
-              Manage Semesters
+              <Calendar size={16} />
+              {isMobile ? "Semesters" : "Manage Semesters"}
             </Button>
+            {isMounted && schoolsEnabled && (
+              <Button 
+                variant="outline" 
+                onClick={() => setManageSchoolsOpen(true)} 
+                className="flex gap-2"
+              >
+                <GraduationCap size={16} />
+                {isMobile ? "Schools" : "Manage Schools"}
+              </Button>
+            )}
             <Button onClick={() => setDialogOpen(true)} className="flex gap-2">
               <Plus size={16} />
               Add Grade
@@ -522,17 +559,29 @@ export default function Grades() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4 md:grid-cols-2">              {/* Stats Card */}              <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">                <div className="flex flex-col space-y-1.5">                  <div className="flex flex-wrap gap-3">
-                    <div className="flex-1 min-w-[300px]">
-                      <h3 className="text-lg font-semibold">Grade Statistics</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {selectedSemester ? `Performance for ${selectedSemester.name}` : 'Your overall performance'}
-                      </p>
-                    </div>
-                    {/* Semester Selector - moved to header */}
-                    <div className="flex-1 min-w-[200px] w-full sm:w-auto sm:max-w-xs lg:max-w-none sm:flex sm:justify-end">
-                      <div className="flex justify-end items-center gap-2 w-full">
-                        <Select
+            <div className="grid gap-4 md:grid-cols-2">              {/* Stats Card */}              <div className="rounded-lg border bg-card p-4 sm:p-6 shadow-sm">                <div className="flex flex-col space-y-3">
+                  {/* Title Section */}
+                  <div>
+                    <h3 className="text-lg font-semibold">Grade Statistics</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {(() => {
+                        if (selectedSemester && selectedSchool) {
+                          return `Performance for ${selectedSemester.name} at ${selectedSchool.name}`;
+                        } else if (selectedSemester) {
+                          return `Performance for ${selectedSemester.name}`;
+                        } else if (selectedSchool) {
+                          return `Performance at ${selectedSchool.name}`;
+                        } else {
+                          return 'Your overall performance';
+                        }
+                      })()}
+                    </p>
+                  </div>
+                  
+                  {/* Selectors Section */}
+                  <div className="flex flex-col sm:flex-row gap-2 w-full">
+                    <div className="flex-1 min-w-0">
+                      <Select
                           value={selectedSemester?.id || 'all'}
                           onValueChange={(value) => {
                             if (value === 'all') {
@@ -568,10 +617,53 @@ export default function Grades() {
                             </SelectItem>
                           ))}                        </ResponsiveSelectContent>
                       </Select>
-                      </div>
                     </div>
-                  </div>
-                </div><div className="mt-6 flex items-center justify-between">
+                      
+                      {/* School Selector */}
+                      {isMounted && schoolsEnabled && activeSchools.length > 0 && (
+                        <div className="flex-1 min-w-0">
+                          <Select
+                          value={selectedSchool?.id || 'all'}
+                          onValueChange={(value) => {
+                            if (value === 'all') {
+                              setSelectedSchool(null);
+                            } else {
+                              const school = activeSchools.find(s => s.id === value);
+                              if (school) {
+                                setSelectedSchool(school);
+                              }
+                            }
+                          }}
+                          disabled={isLoading}
+                        >
+                          <SelectTrigger 
+                            className="px-3 text-ellipsis w-full"
+                            style={triggerStyle}
+                          >
+                            <GraduationCap className="h-4 w-4 flex-shrink-0 mr-2" />
+                            <SelectValue placeholder="Select school" className="truncate" />
+                          </SelectTrigger>
+                          <ResponsiveSelectContent className="max-w-[var(--radix-popover-content-available-width)] max-h-[50vh] overflow-y-auto">
+                            <SelectItem value="all" className="px-3">All Schools</SelectItem>
+                            {activeSchools.map((school) => (
+                              <SelectItem key={school.id} value={school.id} className="px-3">
+                                <div className="flex items-center gap-2 w-full">
+                                  <div 
+                                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                                    style={{ backgroundColor: school.color }}
+                                  />
+                                  <span className="truncate">{school.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </ResponsiveSelectContent>
+                        </Select>
+                        </div>
+                      )}
+                    </div>
+                </div>
+
+                <div className="mt-6 flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">{getDisplayLabel(displayLabel)}</p>
                     <div className={`text-3xl sm:text-4xl font-bold ${currentAverageGrade ? getAverageGradeTextColor(currentAverageGrade) : ''}`}>
@@ -712,6 +804,12 @@ export default function Grades() {
         open={manageSemestersOpen} 
         onOpenChange={setManageSemestersOpen} 
       />
+      {schoolsEnabled && (
+        <ManageSchoolsDialog 
+          open={manageSchoolsOpen} 
+          onOpenChange={setManageSchoolsOpen} 
+        />
+      )}
     </>
   );
 }

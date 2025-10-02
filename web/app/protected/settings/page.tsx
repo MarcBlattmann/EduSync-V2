@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Shield, CheckCircle2, UserCircle, Palette, Upload, Loader2 } from "lucide-react";
+import { Lock, Shield, CheckCircle2, UserCircle, Palette, Upload, Loader2, FlaskConical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
@@ -18,10 +18,12 @@ import { useGradeSystem, GradeSystem } from "@/hooks/use-grade-system";
 import { useDisplayPreferences, DisplayLabelPreference } from "@/hooks/use-display-preferences";
 import { useSemesterDefault, getSemesterDefaultLabel } from "@/hooks/use-semester-default";
 import { useSubjectPreferences, getSubjectFilterLabel } from "@/hooks/use-subject-preferences";
+import { useBetaFeatures } from "@/hooks/use-beta-features";
 import { useSemesters } from "@/contexts/semester-context";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { v4 as uuidv4 } from 'uuid';
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Settings() {
   const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +36,7 @@ export default function Settings() {
   const { displayLabel, setDisplayLabel, isLoading: isDisplayPreferencesLoading } = useDisplayPreferences(); // Use the display preferences hook
   const { defaultSemester, setDefaultSemester, isLoading: isSemesterDefaultLoading } = useSemesterDefault(); // Use the semester default hook
   const { subjectFilter, setSubjectFilter, isLoading: isSubjectFilterLoading } = useSubjectPreferences(); // Use the subject filter hook
+  const { betaFeatures, setBetaFeatures, isLoading: isBetaFeaturesLoading } = useBetaFeatures(); // Use the beta features hook
   const { semesters, activeSemester, isLoading: isSemestersLoading } = useSemesters(); // Get semesters for the dropdown
 
   const router = useRouter();
@@ -195,6 +198,27 @@ export default function Settings() {
     } catch (error) {
       console.error("Error saving subject filter preference:", error);
       alert("Failed to save subject filter preference");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Toggle beta feature
+  const handleBetaFeatureToggle = async (feature: 'schoolsEnabled', enabled: boolean) => {
+    setIsSaving(true);
+    
+    try {
+      const success = await setBetaFeatures({ [feature]: enabled });
+      
+      if (!success) {
+        throw new Error('Failed to save beta feature preference');
+      }
+      
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error saving beta feature preference:", error);
+      alert("Failed to save beta feature preference");
     } finally {
       setIsSaving(false);
     }
@@ -698,6 +722,55 @@ export default function Settings() {
                       </div>
                       <p className="text-xs text-muted-foreground mt-3">
                         Controls which subjects appear in the Add Grade dialog dropdown.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Beta Features Section */}
+                <Card className="border-orange-200 dark:border-orange-900">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <FlaskConical className="h-5 w-5 text-orange-500" />
+                      <CardTitle className="flex items-center gap-2">
+                        Beta Features
+                        <Badge variant="outline" className="text-orange-500 border-orange-500">
+                          Experimental
+                        </Badge>
+                      </CardTitle>
+                    </div>
+                    <CardDescription>
+                      Try out experimental features that are still in development. These features may change or be removed in future updates.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Schools Feature Toggle */}
+                    <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="schools-toggle" className="text-sm font-medium cursor-pointer">
+                            Schools Feature
+                          </Label>
+                          <Badge variant="secondary" className="text-xs">
+                            Beta
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Organize your grades by educational institution. Perfect for students attending multiple schools or taking courses at different locations.
+                        </p>
+                      </div>
+                      <Checkbox
+                        id="schools-toggle"
+                        checked={betaFeatures.schoolsEnabled}
+                        onCheckedChange={(checked) => handleBetaFeatureToggle('schoolsEnabled', checked as boolean)}
+                        disabled={isSaving}
+                      />
+                    </div>
+
+                    {/* Warning Message */}
+                    <div className="rounded-lg bg-orange-50 dark:bg-orange-950/20 p-3 border border-orange-200 dark:border-orange-900">
+                      <p className="text-xs text-orange-800 dark:text-orange-200">
+                        <strong>Note:</strong> Beta features are still under development and may not work as expected. Your feedback helps us improve these features!
                       </p>
                     </div>
                   </CardContent>
