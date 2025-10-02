@@ -6,6 +6,7 @@ export interface School {
   id: string;
   name: string;
   color: string;
+  subjects?: string[];
   is_archived: boolean;
   user_id: string;
   created_at: string;
@@ -15,11 +16,13 @@ export interface School {
 export interface CreateSchoolData {
   name: string;
   color?: string;
+  subjects?: string[];
 }
 
 export interface UpdateSchoolData {
   name?: string;
   color?: string;
+  subjects?: string[];
   is_archived?: boolean;
 }
 

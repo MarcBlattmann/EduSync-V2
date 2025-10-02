@@ -65,7 +65,26 @@ export function AddGradeDialog({
   // Use our centralized grade system hook
   const { gradeSystem: gradeSystemState } = useGradeSystem();
   const { semesters, activeSemester } = useSemesters();
-  const { activeSchools } = useSchools();// Use our imported getGradeRange utility
+  const { activeSchools } = useSchools();
+
+  // Auto-select school based on subject
+  useEffect(() => {
+    if (!subject || isEditing) return; // Don't auto-select when editing
+    
+    // Find schools that have this subject
+    const schoolsWithSubject = activeSchools.filter(school => 
+      school.subjects?.includes(subject)
+    );
+    
+    if (schoolsWithSubject.length === 1) {
+      // Only one school has this subject, auto-select it
+      setSchoolId(schoolsWithSubject[0].id);
+    } else if (schoolsWithSubject.length === 0) {
+      // No school has this subject, clear selection
+      setSchoolId('');
+    }
+    // If multiple schools have this subject, don't change the current selection
+  }, [subject, activeSchools, isEditing]);// Use our imported getGradeRange utility
   const gradeRangeInfo = getGradeRange(gradeSystemState);
   const { min, max, step } = gradeRangeInfo;
   

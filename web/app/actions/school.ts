@@ -30,6 +30,7 @@ export async function createSchool(data: CreateSchoolData): Promise<{
       .insert({
         name: data.name,
         color: data.color || '#3b82f6',
+        subjects: data.subjects || [],
         user_id: user.id
       })
       .select()

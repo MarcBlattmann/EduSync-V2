@@ -56,9 +56,10 @@ import type { School } from '@/types/school';
 interface ManageSchoolsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  existingSubjects?: string[]; // Add existing subjects prop
 }
 
-export function ManageSchoolsDialog({ open, onOpenChange }: ManageSchoolsDialogProps) {
+export function ManageSchoolsDialog({ open, onOpenChange, existingSubjects = [] }: ManageSchoolsDialogProps) {
   const { schools, deleteSchool, refreshSchools, isLoading } = useSchools();
   const [searchQuery, setSearchQuery] = useState('');
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
@@ -223,6 +224,7 @@ export function ManageSchoolsDialog({ open, onOpenChange }: ManageSchoolsDialogP
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onComplete={handleCreateComplete}
+        existingSubjects={existingSubjects}
       />
 
       {/* Edit Dialog */}
@@ -231,6 +233,7 @@ export function ManageSchoolsDialog({ open, onOpenChange }: ManageSchoolsDialogP
         onOpenChange={setEditDialogOpen}
         school={editingSchool}
         onComplete={handleEditComplete}
+        existingSubjects={existingSubjects}
       />
 
       {/* Delete Confirmation Dialog */}

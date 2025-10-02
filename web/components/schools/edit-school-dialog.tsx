@@ -17,7 +17,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Loader2, X, Plus } from 'lucide-react';
 import { useSchools } from '@/hooks/use-schools';
 import type { School, UpdateSchoolData } from '@/types/school';
 
@@ -26,6 +33,7 @@ interface EditSchoolDialogProps {
   onOpenChange: (open: boolean) => void;
   school: School | null;
   onComplete?: () => void;
+  existingSubjects?: string[]; // Add existing subjects prop
 }
 
 const defaultColors = [
@@ -39,15 +47,18 @@ const defaultColors = [
   '#f97316', // orange
 ];
 
-export function EditSchoolDialog({ open, onOpenChange, school, onComplete }: EditSchoolDialogProps) {
+export function EditSchoolDialog({ open, onOpenChange, school, onComplete, existingSubjects = [] }: EditSchoolDialogProps) {
   const { updateSchool } = useSchools();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<UpdateSchoolData>({
     name: '',
     color: defaultColors[0],
+    subjects: [],
     is_archived: false
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [subjectInput, setSubjectInput] = useState('');
+  const [showCustomSubject, setShowCustomSubject] = useState(false);
 
   // Update form data when school changes
   useEffect(() => {
@@ -55,6 +66,7 @@ export function EditSchoolDialog({ open, onOpenChange, school, onComplete }: Edi
       setFormData({
         name: school.name,
         color: school.color,
+        subjects: school.subjects || [],
         is_archived: school.is_archived
       });
     }
@@ -100,6 +112,49 @@ export function EditSchoolDialog({ open, onOpenChange, school, onComplete }: Edi
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleAddSubject = () => {
+    const subject = showCustomSubject ? subjectInput.trim() : subjectInput;
+    if (subject && !formData.subjects?.includes(subject)) {
+      setFormData(prev => ({
+        ...prev,
+        subjects: [...(prev.subjects || []), subject]
+      }));
+      setSubjectInput('');
+      setShowCustomSubject(false);
+    }
+  };
+
+  const handleRemoveSubject = (subjectToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      subjects: (prev.subjects || []).filter(s => s !== subjectToRemove)
+    }));
+  };
+
+  const handleSubjectKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSubject();
+    }
+  };
+
+  const handleSubjectSelect = (value: string) => {
+    if (value === 'custom') {
+      setShowCustomSubject(true);
+      setSubjectInput('');
+    } else {
+      setSubjectInput(value);
+      // Auto-add when selecting from dropdown
+      if (value && !formData.subjects?.includes(value)) {
+        setFormData(prev => ({
+          ...prev,
+          subjects: [...(prev.subjects || []), value]
+        }));
+      }
+      setSubjectInput('');
     }
   };
 
@@ -155,6 +210,83 @@ export function EditSchoolDialog({ open, onOpenChange, school, onComplete }: Edi
             </div>
             <p className="text-sm text-muted-foreground">
               Choose a color to easily identify this school
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-subjects">Subjects (Optional)</Label>
+            {!showCustomSubject ? (
+              <Select value="" onValueChange={handleSubjectSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subjects to add" />
+                </SelectTrigger>
+                <SelectContent>
+                  {existingSubjects
+                    .filter(sub => !formData.subjects?.includes(sub))
+                    .map((subject) => (
+                      <SelectItem key={subject} value={subject}>
+                        {subject}
+                      </SelectItem>
+                    ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <Plus size={16} />
+                      <span>Add new subject</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  id="edit-subjects"
+                  placeholder="Enter new subject"
+                  value={subjectInput}
+                  onChange={(e) => setSubjectInput(e.target.value)}
+                  onKeyDown={handleSubjectKeyDown}
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddSubject}
+                  disabled={!subjectInput.trim()}
+                >
+                  Add
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setShowCustomSubject(false);
+                    setSubjectInput('');
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+            {formData.subjects && formData.subjects.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {formData.subjects.map((subject) => (
+                  <div
+                    key={subject}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-secondary"
+                  >
+                    <span>{subject}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSubject(subject)}
+                      className="hover:bg-secondary-foreground/10 rounded-full p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Add subjects to automatically select this school when adding grades for these subjects
             </p>
           </div>
 

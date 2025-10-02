@@ -807,7 +807,8 @@ export default function Grades() {
       {schoolsEnabled && (
         <ManageSchoolsDialog 
           open={manageSchoolsOpen} 
-          onOpenChange={setManageSchoolsOpen} 
+          onOpenChange={setManageSchoolsOpen}
+          existingSubjects={subjects}
         />
       )}
     </>
