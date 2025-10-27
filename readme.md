@@ -23,7 +23,7 @@ EduSync is a user-friendly web app that helps students stay organized throughout
       <p>Plan and manage school events, exams, and assignments effectively.</p>
     </td>
     <td width="33%" align="center">
-      <h3>📝 Notes </h3>
+      <h3>📝 Notes (Beta) </h3>
       <p>Create, organize, and edit notes in a file system similar to Notion.</p>
     </td>
   </tr>
